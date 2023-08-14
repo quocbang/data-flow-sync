@@ -1,0 +1,261 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: "Sample API"
+  description: "API documentation for a data flow sync"
+  
+schemes:
+  - http
+  - https
+
+security:
+  - api_key: []
+
+basePath: /api
+consumes: [application/json]
+produces: [application/json]
+
+tags: 
+  - name: account
+    description: user account 
+  - name: limitary-hour
+    description: limitary hour manager
+  - name: substitution
+    description: substitution manager
+  - name: material-resource
+    description: material resource manager
+  - name: station
+    description: station manager
+  - name: station-group
+    description: station manager
+
+paths:
+  # account zone
+  /user/login:
+    post:
+      summary: "User login"
+      tags:
+        - "account"
+      operationId: Login
+      security: []
+      parameters:
+        - in: body
+          name: Login
+          description: "User credentials"
+          required: true
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+              password:
+                type: string
+      responses:
+        200:
+          description: "Successful login"
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /user/logout:
+    post:
+      summary: user logout
+      operationId: Logout
+      tags:
+        - "account"
+      security: []
+      responses:
+        200:
+          description: OK
+
+  # limitary zone
+  /limitary-hour/upload/{mergeRequestID}:
+    post:
+      summary: upload limitary hour
+      operationId: UploadLimitaryHour
+      tags:
+        - "limitary-hour"
+      security:
+        - api_key: []
+      parameters:
+        - in: path
+          type: string
+          required: true
+          name: mergeRequestID
+      responses:
+        200:
+          description: OK
+  /limitary-hour/different/{mergeRequestID}:
+    get:
+      summary: get a diff of the file in the temporary area and target area 
+      tags:
+        - "limitary-hour"
+      operationId: GetLimitaryHourDiff
+      parameters:
+        - in: path
+          required: true
+          name: mergeRequestID
+          type: string
+      security:
+        - api_key: []
+      
+      responses:
+        200: 
+          description: OK
+          schema:
+            type: object
+            properties: 
+              data:
+                type: array
+                items: 
+                  $ref: "#/definitions/Limitary-hour"         
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /limitary-hour/merge-request:
+    post:
+      summary: create merge request
+      operationId: CreateMergeRequest
+      tags:
+        - "limitary-hour"
+      security:
+        - api_key: []
+      parameters:
+        - in: body
+          name: body
+          schema:
+            properties: 
+              TemporaryPath:
+                type: string
+                description: temporary file path
+              TargetPath:
+                type: string
+                description: target file path     
+      responses:
+        200: 
+          description: OK
+    get: 
+      summary: get limitary hour merge requests
+      operationId: ListMergeRequests
+      tags:
+        - "limitary-hour"
+      security:
+        - api_key: []
+      responses:
+        200: 
+          description: OK
+          schema:
+            type: object
+            properties: 
+              data: 
+                type: array
+                items: 
+                  $ref: "#/definitions/MergeRequest"
+
+  # station zone
+
+  # material-resource zone
+
+  # substitution zone
+
+securityDefinitions:
+  api_key:
+    type: apiKey
+    in: header
+    name: x-data-flow-sync-auth-key
+
+responses:
+  Default:
+    description: Unexpected error
+    schema:
+      $ref: "#/definitions/ErrorResponse"
+
+definitions:
+  Principal:
+    properties:
+      ID:
+        type: string
+        description: username
+        example: userid
+      roles:
+        $ref: "#/definitions/Roles"
+
+  Roles:
+    type: array
+    description: 使用者角色
+    items:
+      $ref: "#/definitions/Role"
+
+  Role:
+    type: integer
+    x-omitempty: false  
+
+  ErrorResponse:
+    type: object
+    properties:
+      code:
+        type: integer
+        description: error code
+      details:
+        type: string
+        description: error details
+        
+  Token:
+    type: object
+    properties:
+      token:
+        type: string
+
+  Limitary-hour:
+    type: object
+    properties:
+      ProductType:
+        type: string
+        description: product type
+      Min:
+        type: integer
+        description: min
+      Max:
+        type: integer
+        description: max
+
+  MergeRequest:
+    type: object
+    properties: 
+      MergeRequestID:
+        type: string
+        description: merge request id
+      files:
+        type: object
+        properties: 
+          TemporaryPath:
+            type: string
+            description: temporary file path
+          targetPath:
+            type: string
+            description: target file path
+      RequestExpiryTime:
+        type: integer
+        description: merge request expiry time, auto close merge request if was expired
+      LastModified:
+        type: string
+        format: date-time
+        example: "2017-07-21T17:32:28Z"
+        description: latest modified time 
+      CreateBy:
+        type: string
+        description: merge request owner

@@ -1,0 +1,22 @@
+ui-dir: ./ui/dist
+database:
+  postgres:
+    address: localhost
+    port: 5432
+    name: demo_database
+    schema: public
+    username: api_server_basic_user
+    password: api_server_basic_password 
+  redis:
+    address: localhost:6379
+    password: api_server_basic_password
+    database: 1
+access-dir:
+  - ./limitary-hour
+  - ./station
+  - ./station-group
+  - ./material-resource
+  - ./substitution
+mr-expiry-time: 24 # hour
+sync-api-server: "localhost:4422"
+roles:

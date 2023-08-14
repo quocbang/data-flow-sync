@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package errors;
+option go_package = "gitlab.com/quocbang/data-flow-sync/server/internal/repositories/errors";
+
+enum Code {
+    NONE = 0;
+
+    WRONG_PASSWORD = 100100;    
+}
