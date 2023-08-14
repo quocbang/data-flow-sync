@@ -14,13 +14,13 @@ import (
 	"github.com/go-openapi/swag"
 	"gopkg.in/yaml.v3"
 
-	"gitlab.com/quocbang/data-flow-sync/server"
-	apiService "gitlab.com/quocbang/data-flow-sync/server/api"
-	"gitlab.com/quocbang/data-flow-sync/server/config"
-	"gitlab.com/quocbang/data-flow-sync/server/swagger/models"
-	"gitlab.com/quocbang/data-flow-sync/server/swagger/restapi/operations"
-	"gitlab.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
-	"gitlab.com/quocbang/data-flow-sync/server/swagger/restapi/operations/limitary_hour"
+	"github.com/quocbang/data-flow-sync/server"
+	apiService "github.com/quocbang/data-flow-sync/server/api"
+	"github.com/quocbang/data-flow-sync/server/config"
+	"github.com/quocbang/data-flow-sync/server/swagger/models"
+	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations"
+	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
+	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/limitary_hour"
 )
 
 //go:generate swagger generate server --target ..\..\swagger --name DataFlowSync --spec ..\..\..\swagger.yml --principal models.Principal

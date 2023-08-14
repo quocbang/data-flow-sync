@@ -1,10 +1,10 @@
 package connection
 
 import (
-	"gitlab.com/quocbang/data-flow-sync/server/internal/repositories"
-	"gitlab.com/quocbang/data-flow-sync/server/internal/repositories/services/account"
-	"gitlab.com/quocbang/data-flow-sync/server/internal/repositories/services/station"
-	"gitlab.com/quocbang/data-flow-sync/server/internal/repositories/services/stationgroup"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/account"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/station"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/stationgroup"
 )
 
 func (s *DB) Station() repositories.StationServices {

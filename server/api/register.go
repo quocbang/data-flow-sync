@@ -1,11 +1,11 @@
 package api
 
 import (
-	"gitlab.com/quocbang/data-flow-sync/server/internal/repositories"
-	"gitlab.com/quocbang/data-flow-sync/server/internal/services"
-	a "gitlab.com/quocbang/data-flow-sync/server/internal/services/account"
-	"gitlab.com/quocbang/data-flow-sync/server/swagger/restapi/operations"
-	"gitlab.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories"
+	"github.com/quocbang/data-flow-sync/server/internal/services"
+	a "github.com/quocbang/data-flow-sync/server/internal/services/account"
+	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations"
+	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
 )
 
 type ServiceConfig struct {

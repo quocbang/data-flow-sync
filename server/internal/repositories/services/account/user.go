@@ -11,9 +11,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	"gitlab.com/quocbang/data-flow-sync/server/internal/repositories"
-	e "gitlab.com/quocbang/data-flow-sync/server/internal/repositories/errors"
-	"gitlab.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories"
+	e "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
 )
 
 var secretKey = os.Getenv("DATA_FLOW_SYNC_SECRET_KEY")

@@ -2,8 +2,8 @@ package services
 
 import (
 	"github.com/go-openapi/runtime/middleware"
-	"gitlab.com/quocbang/data-flow-sync/server/swagger/models"
-	"gitlab.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
+	"github.com/quocbang/data-flow-sync/server/swagger/models"
+	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
 )
 
 type Services struct {

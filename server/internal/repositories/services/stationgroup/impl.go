@@ -4,7 +4,7 @@ import (
 	"github.com/go-redis/redis"
 	"gorm.io/gorm"
 
-	"gitlab.com/quocbang/data-flow-sync/server/internal/repositories"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 )
 
 type service struct {

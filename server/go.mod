@@ -1,4 +1,4 @@
-module gitlab.com/quocbang/data-flow-sync/server
+module github.com/quocbang/data-flow-sync/server
 
 go 1.20
 

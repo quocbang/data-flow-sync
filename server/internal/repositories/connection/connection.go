@@ -7,9 +7,9 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"gitlab.com/quocbang/data-flow-sync/server/config"
-	"gitlab.com/quocbang/data-flow-sync/server/internal/repositories"
-	"gitlab.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
+	"github.com/quocbang/data-flow-sync/server/config"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
 )
 
 type DB struct {
