@@ -1,6 +1,10 @@
 package repositories
 
-import "context"
+import (
+	"context"
+
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
+)
 
 type Services interface {
 	Account() AccountServices
@@ -15,8 +19,8 @@ type StationGroupServices interface {
 }
 
 type AccountServices interface {
-	CreateAccount(context.Context, CreateAccountRequest) (CreateAccountReply, error)
+	Authorization(context.Context, string) (*models.JwtCustomClaims, error)
 	DeleteAccount(context.Context, DeleteAccountRequest) (CommonUpdateAndDeleteReply, error)
 	SignIn(context.Context, SignInRequest) (SignInReply, error)
-	SignOut(context.Context) error
+	SignOut(context.Context, string) error
 }

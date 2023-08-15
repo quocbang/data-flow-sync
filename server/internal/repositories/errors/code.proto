@@ -6,5 +6,13 @@ option go_package = "github.com/quocbang/data-flow-sync/server/internal/reposito
 enum Code {
     NONE = 0;
 
-    WRONG_PASSWORD = 100100;    
+    WRONG_PASSWORD = 100100; 
+    MISSING_TOKEN = 100200;
+    MISSING_SECRET_KEY = 100300;
+    INVALID_TOKEN = 100400;
+    FORBIDDEN = 100500;
+    TOKEN_EXPIRED = 100600;
+    TOKEN_BLOCKED = 100800;
+
+    ACCOUNT_NOT_FOUND = 100700;
 }

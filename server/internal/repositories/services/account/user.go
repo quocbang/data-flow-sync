@@ -2,18 +2,19 @@ package account
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/go-redis/redis/v9"
-	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	e "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
+	"github.com/quocbang/data-flow-sync/server/utils/roles"
 )
 
 var secretKey = os.Getenv("DATA_FLOW_SYNC_SECRET_KEY")
@@ -34,26 +35,32 @@ func NewService(pg *gorm.DB, rd *redis.Client) repositories.AccountServices {
 func (s service) getAccount(ctx context.Context, userID string) (models.Account, error) {
 	user := models.Account{}
 	if err := s.pg.Where(`id=?`, userID).Take(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Account{}, e.Error{
+				Code:    e.Code_ACCOUNT_NOT_FOUND,
+				Details: "account not found",
+			}
+		}
 		return models.Account{}, err
 	}
 
 	return user, nil
 }
 
-// CreateAccount is create new account
-func (s service) CreateAccount(ctx context.Context, req repositories.CreateAccountRequest) (repositories.CreateAccountReply, error) {
+// CreateAccount is create new account with unspecified role.
+func (s service) createAccount(ctx context.Context, req repositories.CreateAccountRequest) (repositories.CreateAccountReply, error) {
 	// hash password
-	pwd, err := toHashPassword(req.Password)
+	pwd, err := models.ToHashPassword(req.Password)
 	if err != nil {
 		return repositories.CreateAccountReply{}, e.Error{
-			Detail: fmt.Sprintf("failed to generate password, error: %v", err.Error()),
+			Details: fmt.Sprintf("failed to generate password, error: %v", err.Error()),
 		}
 	}
 
 	reply := s.pg.Create(&models.Account{
 		UserID:   req.UserID,
 		Password: pwd,
-		Roles:    req.Roles,
+		Role:     roles.Roles_UNSPECIFIED,
 	})
 
 	return repositories.CreateAccountReply{RowsAffected: reply.RowsAffected}, reply.Error
@@ -77,8 +84,8 @@ func (s service) SignIn(ctx context.Context, req repositories.SignInRequest) (re
 		if err == bcrypt.ErrMismatchedHashAndPassword {
 			// Passwords don't match, handle the invalid login
 			return repositories.SignInReply{}, e.Error{
-				Code:   e.Code_WRONG_PASSWORD,
-				Detail: "wrong password",
+				Code:    e.Code_WRONG_PASSWORD,
+				Details: "wrong password",
 			}
 		} else {
 			// Handle the error
@@ -87,7 +94,7 @@ func (s service) SignIn(ctx context.Context, req repositories.SignInRequest) (re
 	}
 
 	// create JWT.
-	token, err := s.generateJWT(ctx, userInfo)
+	token, err := userInfo.GenerateJWT(ctx, req.Options.TokenLifeTime, secretKey)
 	if err != nil {
 		return repositories.SignInReply{}, err
 	}
@@ -97,46 +104,42 @@ func (s service) SignIn(ctx context.Context, req repositories.SignInRequest) (re
 
 // SignOut is logout the system and save token to black list of
 // the time haven't expired
-func (s service) SignOut(ctx context.Context) error {
-	return nil
+func (s service) SignOut(ctx context.Context, token string) error {
+	claims, err := models.VerifyToken(token, secretKey)
+	if err != nil {
+		return err
+	}
+
+	timeRemaining := time.Until(time.Unix(claims.ExpiresAt, 0))
+	reply := s.rd.Set(token, nil, timeRemaining)
+
+	return reply.Err()
 }
 
-// toHashPassword hashes the password using bcrypt
-func toHashPassword(password string) ([]byte, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// Authorization verify token and parse it to check auth.
+func (s service) Authorization(ctx context.Context, token string) (*models.JwtCustomClaims, error) {
+	// check black list
+	dataCount, err := s.getBlackList(token)
 	if err != nil {
 		return nil, err
 	}
-	return hashedPassword, nil
-}
-
-type JwtCustomClaims struct {
-	Email      string    `json:"email"`
-	ExpiryTime time.Time `json:"expiry_time"`
-	Roles      []int64   `json:"roles"`
-	jwt.StandardClaims
-}
-
-// generate JWT.
-func (s *service) generateJWT(ctx context.Context, userInfo models.Account) (string, error) {
-	if secretKey == "" {
-		return "", e.Error{
-			Detail: "secret key not found",
+	if dataCount > 0 {
+		return nil, e.Error{
+			Code:    e.Code_TOKEN_BLOCKED,
+			Details: "token was blocked",
 		}
 	}
 
-	claims := &JwtCustomClaims{
-		Email:      userInfo.UserID,
-		ExpiryTime: time.Now().Add(time.Hour * 8),
-		Roles:      userInfo.Roles,
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	signedToken, err := token.SignedString([]byte(secretKey))
+	// verify token.
+	claims, err := models.VerifyToken(token, secretKey)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return signedToken, nil
+	return claims, nil
+}
+
+// getBlackList get data in black list.
+func (s service) getBlackList(token string) (int64, error) { // return row number and error.
+	return s.rd.Exists(token).Result()
 }

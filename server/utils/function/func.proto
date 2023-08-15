@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package function;
+option go_package = "github.com/quocbang/data-flow-sync/server/utils/function";
+
+enum FuncName {
+    NONE = 0;
+
+    // limiatry hour
+    UPLOAD_LIMITARY_HOUR = 1;
+    
+    // station
+
+    // station group
+
+    // add more here
+}

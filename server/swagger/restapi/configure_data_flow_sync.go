@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
@@ -42,23 +43,21 @@ func configureFlags(api *operations.DataFlowSyncAPI) {
 	})
 }
 
-func parseConfig(filePath string) (*config.Configs, error) {
+func parseConfig(filePath string) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var cfs config.Configs
-	if err := yaml.Unmarshal(data, &cfs); err != nil {
-		return nil, err
+	if err := yaml.Unmarshal(data, &configurations); err != nil {
+		return err
 	}
 
-	return &cfs, nil
+	return nil
 }
 
 func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
-	configs, err := parseConfig(options.ConfigPath)
-	if err != nil {
+	if err := parseConfig(options.ConfigPath); err != nil {
 		log.Fatalf("failed to parse config file, error: %v", err)
 	}
 
@@ -82,14 +81,15 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 
 	api.JSONProducer = runtime.JSONProducer()
 
-	repo, err := server.RegisterRepository(configs.Database)
+	repo, err := server.RegisterRepository(configurations.Database)
 	if err != nil {
 		log.Fatalf("failed to register repository, error: %v", err)
 	}
 
 	serviceConfig := apiService.ServiceConfig{
-		Repo:         repo,
-		MRExpiryTime: configs.MRExpiryTime,
+		Repo:          repo,
+		TokenLifeTime: time.Duration(configurations.TokenLifeTime),
+		MRExpiryTime:  configurations.MRExpiryTime,
 	}
 
 	apiService.RegisterAPI(api, serviceConfig)

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package roles;
+option go_package = "github.com/quocbang/data-flow-sync/server/utils/roles";
+
+
+enum Roles {
+    UNSPECIFIED = 0;
+    USER = 1;
+    LEADER = 2;
+    ADMINISTRATOR = 3;
+}

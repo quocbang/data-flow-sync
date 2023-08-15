@@ -18,5 +18,8 @@ access-dir:
   - ./material-resource
   - ./substitution
 mr-expiry-time: 24 # hour
+token-life-time: 10 # minute
 sync-api-server: "localhost:4422"
 roles:
+  UPLOAD_LIMITARY_HOUR:
+    - LEADER
