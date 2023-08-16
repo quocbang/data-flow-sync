@@ -4,13 +4,13 @@ import (
 	"log"
 	"os"
 
-	fake "github.com/brianvoe/gofakeit/v6"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
+	"github.com/quocbang/data-flow-sync/server/utils/random"
 )
 
 type SuiteConfig struct {
@@ -40,8 +40,7 @@ func NewSuiteTest(params SuiteParameters) *SuiteConfig {
 var logger *zap.Logger
 
 func (s *SuiteConfig) SetupSuite() {
-	ranDomSeed := fake.UUID()
-	field := []zap.Field{zap.String("random_seed", ranDomSeed)}
+	field := []zap.Field{zap.String("random_seed", random.RandomString(30))}
 	logger.Info("seed", field...)
 
 	// initialize database.

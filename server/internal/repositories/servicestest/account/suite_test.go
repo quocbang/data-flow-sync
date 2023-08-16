@@ -15,7 +15,7 @@ type Suite struct {
 
 // NewSuite create all necessary.
 func NewSuite() *Suite {
-	s := suite.NewSuiteTest(suite.NewSuiteParameters{
+	s := suite.NewSuiteTest(suite.SuiteParameters{
 		RelativeModels:       []models.Models{&models.Account{}},
 		ClearDataForEachTest: true,
 	})

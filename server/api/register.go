@@ -17,14 +17,14 @@ type ServiceConfig struct {
 	MRExpiryTime  int64
 }
 
-func newHandleService(s ServiceConfig) *services.Services {
+func NewHandleService(s ServiceConfig) *services.Services {
 	return services.RegisterService(
 		a.NewAuthorization(s.Repo, s.TokenLifeTime, roles.HasPermission),
 	)
 }
 
 func RegisterAPI(api *operations.DataFlowSyncAPI, serviceConfig ServiceConfig) {
-	s := newHandleService(serviceConfig)
+	s := NewHandleService(serviceConfig)
 
 	// account
 	api.APIKeyAuth = s.Account.Auth
