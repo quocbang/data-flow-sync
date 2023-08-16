@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-openapi/swag"
+	"github.com/go-redis/redis"
 	"github.com/jessevdk/go-flags"
 	"github.com/quocbang/data-flow-sync/server/config"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
@@ -26,12 +27,12 @@ var redisTest struct {
 	RedisDatabase int    `long:"redis_database" description:"The test Redis database" env:"REDIS_DATABASE"`
 }
 
-func InitializeDB() (repo repositories.Repositories, db *gorm.DB, err error) {
+func InitializeDB() (repo repositories.Repositories, pg *gorm.DB, rd *redis.Client, err error) {
 	if err = parseFlags(); err != nil {
 		return // return when parse failed.
 	}
 
-	repo, db, err = newTestDataManager()
+	repo, pg, rd, err = newTestDataManager()
 	return
 }
 
@@ -63,7 +64,7 @@ func parseFlags() error {
 	return nil
 }
 
-func newTestDataManager() (dm repositories.Repositories, db *gorm.DB, err error) {
+func newTestDataManager() (dm repositories.Repositories, pg *gorm.DB, rd *redis.Client, err error) {
 	conn := connection.Database{
 		Postgres: config.PostgresConfig{
 			Address:  postGresTest.DBAddress,
@@ -82,12 +83,18 @@ func newTestDataManager() (dm repositories.Repositories, db *gorm.DB, err error)
 
 	dm, err = connection.NewRepository(conn)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	db, err = connection.NewPostgres(conn.Postgres)
+	pg, err = connection.NewPostgres(conn.Postgres)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
+
+	rd, err = connection.NewRedis(conn.Redis)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	return
 }

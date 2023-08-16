@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -15,7 +16,8 @@ import (
 
 type SuiteConfig struct {
 	*suite.Suite
-	DB   *gorm.DB
+	PG   *gorm.DB
+	RD   *redis.Client
 	Repo repositories.Repositories
 
 	relativeModels       []models.Models
@@ -44,12 +46,11 @@ func (s *SuiteConfig) SetupSuite() {
 	logger.Info("seed", field...)
 
 	// initialize database.
-	repo, db, err := InitializeDB()
+	repo, pg, rd, err := InitializeDB()
 	if err != nil {
 		os.Exit(1)
 	}
-	s.DB = db
-	s.Repo = repo
+	s.Repo, s.PG, s.RD = repo, pg, rd
 }
 
 func (suite *SuiteConfig) TearDownSuite() {
@@ -59,13 +60,17 @@ func (suite *SuiteConfig) TearDownSuite() {
 	}
 }
 
-func (s *SuiteConfig) ClearData() error {
+func (s *SuiteConfig) ClearPostgresData() error {
 	for _, m := range s.relativeModels {
-		if err := s.DB.Where("1=1").Delete(m).Error; err != nil {
+		if err := s.PG.Where("1=1").Delete(m).Error; err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (s *SuiteConfig) ClearRedisData() error {
+	return s.RD.FlushDB().Err()
 }
 
 func init() {
