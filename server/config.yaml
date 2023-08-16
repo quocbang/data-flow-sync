@@ -3,14 +3,19 @@ database:
   postgres:
     address: localhost
     port: 5432
-    name: demo_database
-    schema: public
-    username: api_server_basic_user
-    password: api_server_basic_password 
+    name: postgres
+    schema: maindb
+    username: postgres
+    password: thaithai 
   redis:
     address: localhost:6379
-    password: api_server_basic_password
-    database: 1
+    password: edit_your_own_password_for_redis
+    database: 5
+  mail-server:
+    smtp-server: "smtp.gmail.com" 
+    smtp-port: 587
+    sender-email: "1194030275.dnu@gmail.com"
+    password: "thai@123"
 access-dir:
   - ./limitary-hour
   - ./station

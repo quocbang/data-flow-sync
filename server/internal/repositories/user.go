@@ -5,9 +5,7 @@ type SignInRequest struct {
 	Password string
 }
 
-type SignInReply struct {
-	Token string
-}
+type SignInReply commonWithToken
 
 type CreateAccountRequest struct {
 	UserID   string  `validate:"required"`
@@ -22,3 +20,7 @@ type CreateAccountReply struct {
 type DeleteAccountRequest struct {
 	UserID string `validate:"required"`
 }
+
+type VerifyAccountRequest commonWithToken
+
+type VerifyAccountReply commonWithToken

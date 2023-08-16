@@ -23,6 +23,14 @@ type RedisConfig struct {
 type DatabaseGroup struct {
 	Postgres PostgresConfig `yaml:"postgres"`
 	Redis    RedisConfig    `yaml:"redis"`
+	SMTP     SmtpConfig     `yaml:"mail-server"`
+}
+
+type SmtpConfig struct {
+	SmtpServer  string `yaml:"smtp-server"`
+	SmtpPort    int    `yaml:"smtp-port"`
+	SenderEmail string `yaml:"sender-email"`
+	Password    string `yaml:"password"`
 }
 
 type Configs struct {

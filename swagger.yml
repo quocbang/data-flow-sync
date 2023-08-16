@@ -54,10 +54,7 @@ paths:
         200:
           description: "Successful login"
           schema:
-            type: object
-            properties:
-              token:
-                type: string
+            $ref: "#/definitions/Token"
         400:
           description: Bad Request
           schema:
@@ -76,7 +73,88 @@ paths:
       responses:
         200:
           description: OK
-
+  /user/signup:
+    post:
+      summary: user sign up form 
+      operationId: Signup
+      tags:
+        - "account"
+      security: []
+      parameters:
+        - in: body
+          name: Signup
+          description: user credential information
+          required: true
+          schema:
+            type: object
+            properties: 
+              email:
+                type: string
+              password:
+                type: string
+              retype:
+                type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: "#/definitions/Token"
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /user/verify-account:
+    post:
+      summary: verify signed up account
+      operationId: VerifyAccount
+      tags:
+        - "account"
+      security: []
+      parameters:
+        - in: body
+          name: Account-verify
+          required: true
+          schema:
+            type: object
+            properties: 
+              otp: 
+                type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: "#/definitions/Token"
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /user/send-mail:
+    post:
+      summary: send otp to specified email address
+      operationId: SendMail
+      tags:
+        - "account"
+      security: 
+        - api_key: []
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   # limitary zone
   /limitary-hour/upload/{mergeRequestID}:
     post:

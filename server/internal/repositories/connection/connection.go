@@ -2,6 +2,7 @@ package connection
 
 import (
 	"fmt"
+	"net/smtp"
 
 	"github.com/go-redis/redis"
 	"gorm.io/driver/postgres"
@@ -15,6 +16,7 @@ import (
 type DB struct {
 	Postgres *gorm.DB
 	Redis    *redis.Client
+	SMTP     *smtp.Client
 }
 
 type options struct {
@@ -82,9 +84,15 @@ func NewRepository(db Database) (*DB, error) {
 		return nil, err
 	}
 
+	smtp, err := NewSMTPConnection(db.SMTP)
+	if err != nil {
+		return nil, err
+	}
+
 	return &DB{
 		Postgres: pg,
 		Redis:    redis,
+		SMTP:     smtp,
 	}, nil
 }
 
@@ -119,4 +127,27 @@ func migrateTable(pg *gorm.DB, ms ...models.Models) error {
 		dst = append(dst, m)
 	}
 	return pg.AutoMigrate(dst...)
+}
+
+func NewSMTPConnection(config config.SmtpConfig) (*smtp.Client, error) {
+	// Create an authentication mechanism
+	auth := smtp.PlainAuth("", config.SenderEmail, config.Password, config.SmtpServer)
+
+	// Connect to the SMTP server
+	conn, err := smtp.Dial(fmt.Sprintf("%s:%d", config.SmtpServer, config.SmtpPort))
+	if err != nil {
+		return &smtp.Client{}, err
+	}
+
+	// Authenticate
+	if err := conn.Auth(auth); err != nil {
+		return &smtp.Client{}, err
+	}
+
+	// Set the sender
+	if err := conn.Mail(config.SenderEmail); err != nil {
+		return &smtp.Client{}, err
+	}
+
+	return conn, nil
 }

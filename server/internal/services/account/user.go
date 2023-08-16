@@ -26,11 +26,24 @@ func (a Authorization) Auth(token string) (*models.Principal, error) {
 
 func (a Authorization) Login(params account.LoginParams) middleware.Responder {
 
-	return account.NewLoginOK().WithPayload(&account.LoginOKBody{
+	return account.NewLoginOK().WithPayload(&models.Token{
 		Token: uuid.NewString(),
 	})
 }
 
 func (a Authorization) Logout(params account.LogoutParams) middleware.Responder {
 	return account.NewLogoutOK()
+}
+
+func (a Authorization) SignUp(params account.SignupParams) middleware.Responder {
+
+	return nil
+}
+
+func (a Authorization) VerifyAccount(parmas account.VerifyAccountParams) middleware.Responder {
+	return nil
+}
+
+func (a Authorization) SendMail(params account.SendMailParams) middleware.Responder {
+	return nil
 }

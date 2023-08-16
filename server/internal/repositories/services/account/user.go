@@ -3,6 +3,8 @@ package account
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"net/smtp"
 	"os"
 	"time"
 
@@ -19,14 +21,16 @@ import (
 var secretKey = os.Getenv("DATA_FLOW_SYNC_SECRET_KEY")
 
 type service struct {
-	pg *gorm.DB
-	rd *redis.Client
+	pg   *gorm.DB
+	rd   *redis.Client
+	smtp *smtp.Client
 }
 
-func NewService(pg *gorm.DB, rd *redis.Client) repositories.AccountServices {
+func NewService(pg *gorm.DB, rd *redis.Client, sm *smtp.Client) repositories.AccountServices {
 	return service{
-		pg: pg,
-		rd: rd,
+		pg:   pg,
+		rd:   rd,
+		smtp: sm,
 	}
 }
 
@@ -41,7 +45,7 @@ func (s service) getAccount(ctx context.Context, userID string) (models.Account,
 }
 
 // CreateAccount is create new account
-func (s service) CreateAccount(ctx context.Context, req repositories.CreateAccountRequest) (repositories.CreateAccountReply, error) {
+func (s service) createAccount(ctx context.Context, req repositories.CreateAccountRequest) (repositories.CreateAccountReply, error) {
 	// hash password
 	pwd, err := toHashPassword(req.Password)
 	if err != nil {
@@ -139,4 +143,58 @@ func (s *service) generateJWT(ctx context.Context, userInfo models.Account) (str
 	}
 
 	return signedToken, nil
+}
+
+func (s service) SignUp(ctx context.Context, req repositories.CreateAccountRequest) (repositories.SignInReply, error) {
+	_, err := s.createAccount(ctx, req)
+	if err != nil {
+		return repositories.SignInReply{}, err
+	}
+
+	return repositories.SignInReply{}, nil
+}
+
+func (s service) VerifyAccount(ctx context.Context, req repositories.VerifyAccountRequest) (repositories.VerifyAccountReply, error) {
+
+	return repositories.VerifyAccountReply{}, nil
+}
+
+func optCreator(receiver string) int {
+	// Initialize the random number generator
+	rand.Seed(time.Now().UnixNano())
+
+	// Generate a random 6-digit number
+	randOTP := rand.Intn(900000) + 100000
+
+	return randOTP
+}
+
+func (s service) SendMail(ctx context.Context, recipience string) error {
+	if err := s.smtp.Rcpt(recipience); err != nil {
+		return err
+	}
+
+	// Compose the HTML email message
+	message := "To: " + recipience + "\n" +
+		"Subject: OTP verifier\n" +
+		"MIME-Version: 1.0\n" +
+		"Content-Type: text/html; charset=\"utf-8\"\n" +
+		"\n" +
+		"<html><body>" +
+		"<h1>Hello from Go!</h1>" +
+		"<p>This is an <strong>HTML-formatted</strong> email.</p>" +
+		"</body></html>"
+
+	wc, err := s.smtp.Data()
+	if err != nil {
+		return err
+	}
+	defer wc.Close()
+
+	_, err = fmt.Fprintf(wc, message)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

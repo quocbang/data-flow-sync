@@ -26,6 +26,9 @@ func RegisterAPI(api *operations.DataFlowSyncAPI, serviceConfig ServiceConfig) {
 	api.APIKeyAuth = s.Account.Auth
 	api.AccountLoginHandler = account.LoginHandlerFunc(s.Account.Login)
 	api.AccountLogoutHandler = account.LogoutHandlerFunc(s.Account.Logout)
+	api.AccountSignupHandler = account.SignupHandlerFunc(s.Account.SignUp)
+	api.AccountVerifyAccountHandler = account.VerifyAccountHandlerFunc(s.Account.VerifyAccount)
+	api.AccountSendMailHandler = account.SendMailHandlerFunc(s.Account.SendMail)
 
 	// limitary-hour
 

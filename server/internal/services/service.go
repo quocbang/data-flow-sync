@@ -32,4 +32,7 @@ type AccountServices interface {
 	Auth(string) (*models.Principal, error)
 	Login(params account.LoginParams) middleware.Responder
 	Logout(params account.LogoutParams) middleware.Responder
+	SignUp(params account.SignupParams) middleware.Responder
+	VerifyAccount(params account.VerifyAccountParams) middleware.Responder
+	SendMail(params account.SendMailParams, principal *models.Principal) middleware.Responder
 }

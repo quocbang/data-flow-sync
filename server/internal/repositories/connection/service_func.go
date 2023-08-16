@@ -12,6 +12,25 @@ func (s *DB) Station() repositories.StationServices {
 }
 
 func (s *DB) Close() error {
+	// close postgresql
+	db, err := s.Postgres.DB()
+	if err != nil {
+		return err
+	}
+	if err := db.Close(); err != nil {
+		return err
+	}
+
+	// close redis
+	if err := s.Redis.Close(); err != nil {
+		return err
+	}
+
+	// close smtp
+	if err := s.SMTP.Close(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -20,5 +39,5 @@ func (s *DB) StationGroup() repositories.StationGroupServices {
 }
 
 func (s *DB) Account() repositories.AccountServices {
-	return account.NewService(s.Postgres, s.Redis)
+	return account.NewService(s.Postgres, s.Redis, s.SMTP)
 }
