@@ -46,12 +46,11 @@ func (a Authorization) Auth(token string) (*models.Principal, error) {
 		}
 		return nil, err
 	}
-	principal := &models.Principal{
+	return &models.Principal{
 		ID:                claims.UserID,
 		Role:              int64(claims.Role),
 		IsUnspecifiedUser: claims.IsUnspecifiedUser,
-	}
-	return principal, nil
+	}, nil
 }
 
 func (a Authorization) Login(params account.LoginParams) middleware.Responder {

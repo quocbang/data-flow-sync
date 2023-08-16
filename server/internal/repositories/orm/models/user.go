@@ -84,7 +84,8 @@ func VerifyToken(token string, secretKey string) (*JwtCustomClaims, error) {
 		}
 	}
 
-	JWTToken, err := jwt.ParseWithClaims(token, &JwtCustomClaims{}, func(t *jwt.Token) (interface{}, error) {
+	claims := JwtCustomClaims{}
+	_, err := jwt.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, repoErrors.Error{
 				Code:    repoErrors.Code_FORBIDDEN,
@@ -101,17 +102,13 @@ func VerifyToken(token string, secretKey string) (*JwtCustomClaims, error) {
 					Details: err.Error(),
 				}
 			}
+			return nil, repoErrors.Error{
+				Code:    repoErrors.Code_INVALID_TOKEN,
+				Details: "token invalid",
+			}
 		}
 		return nil, err
 	}
 
-	claims, ok := JWTToken.Claims.(*JwtCustomClaims)
-	if !ok || !JWTToken.Valid {
-		return nil, repoErrors.Error{
-			Code:    repoErrors.Code_INVALID_TOKEN,
-			Details: "token invalid",
-		}
-	}
-
-	return claims, nil
+	return &claims, nil
 }

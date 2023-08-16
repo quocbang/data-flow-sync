@@ -22,14 +22,14 @@ type SuiteConfig struct {
 	clearDataForEachTest bool
 }
 
-type NewSuiteParameters struct {
+type SuiteParameters struct {
 	// just do test or clear data in those models also data in database.
 	RelativeModels []models.Models
 	// clear all data in RelativeModels.
 	ClearDataForEachTest bool
 }
 
-func NewSuiteTest(params NewSuiteParameters) *SuiteConfig {
+func NewSuiteTest(params SuiteParameters) *SuiteConfig {
 	return &SuiteConfig{
 		relativeModels:       params.RelativeModels,
 		Suite:                &suite.Suite{},
