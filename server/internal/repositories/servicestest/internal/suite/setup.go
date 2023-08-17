@@ -99,7 +99,7 @@ func newTestDataManager() (dm repositories.Repositories, db *gorm.DB, rd *redis.
 		},
 	}
 
-	dm, err = connection.NewRepository(conn)
+	dm, err = connection.New(conn, connection.MaybeMigrate())
 	if err != nil {
 		return nil, nil, nil, err
 	}

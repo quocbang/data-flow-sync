@@ -2,10 +2,11 @@ package account
 
 import (
 	"context"
-	"testing"
 )
 
-func (s Suite) Test_SendMail(t *testing.T) {
+func (s *Suite) TestSendMail() {
+	assert := s.Assertions
 	ctx := context.Background()
-	s.GetDm().Account().SendMail(ctx, "leducthai.access.vcmi@gmail.com")
+	err := s.GetDm().Account().SendMail(ctx, "bangquoc9@gmail.com")
+	assert.NoError(err)
 }

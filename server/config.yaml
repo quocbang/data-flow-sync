@@ -13,9 +13,9 @@ database:
     database: 5
   mail-server:
     smtp-server: "smtp.gmail.com" 
-    smtp-port: 587
-    sender-email: "1194030275.dnu@gmail.com"
-    password: "thai@123"
+    smtp-port: 465
+    sender-email: "leducthai.access.vcmi@gmail.com"
+    password: "pjkpplfhqiyqjvsc"
 access-dir:
   - ./limitary-hour
   - ./station

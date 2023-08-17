@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
-	"github.com/quocbang/data-flow-sync/server/internal/repositories/servicestest/internal/suite"
+	servicestest "github.com/quocbang/data-flow-sync/server/internal/repositories/servicestest/internal/suite"
 	"github.com/stretchr/testify/suite"
 )
 

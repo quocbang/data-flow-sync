@@ -1,7 +1,7 @@
 package servicestest
 
 import (
-	"os"
+	"log"
 	"time"
 
 	"bou.ke/monkey"
@@ -40,10 +40,10 @@ func NewSuiteConfig(params SuiteParameters) *SuiteConfig {
 	}
 }
 
-func (s SuiteConfig) SetupSuite() {
+func (s *SuiteConfig) SetupSuite() {
 	dm, db, rd, err := InitializeDB()
 	if err != nil {
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	s.db = db
 	s.repo = dm
@@ -65,7 +65,7 @@ func (s *SuiteConfig) ClearData() error {
 	return nil
 }
 
-func (s SuiteConfig) SetupTest() {
+func (s *SuiteConfig) SetupTest() {
 	if s.clearData {
 		s.ClearData()
 	}

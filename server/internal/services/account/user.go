@@ -44,6 +44,6 @@ func (a Authorization) VerifyAccount(parmas account.VerifyAccountParams) middlew
 	return nil
 }
 
-func (a Authorization) SendMail(params account.SendMailParams) middleware.Responder {
+func (a Authorization) SendMail(params account.SendMailParams, principal *models.Principal) middleware.Responder {
 	return nil
 }

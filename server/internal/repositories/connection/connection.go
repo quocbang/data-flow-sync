@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/smtp"
 
@@ -133,21 +134,34 @@ func NewSMTPConnection(config config.SmtpConfig) (*smtp.Client, error) {
 	// Create an authentication mechanism
 	auth := smtp.PlainAuth("", config.SenderEmail, config.Password, config.SmtpServer)
 
+	// Create a TLS configuration
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: false, // You might want to set this to false in production
+		ServerName:         config.SmtpServer,
+	}
+
+	// Connect to the SMTP server with a TLS connection
+	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:%d", config.SmtpServer, config.SmtpPort), tlsConfig)
+	if err != nil {
+		return &smtp.Client{}, err
+	}
+
 	// Connect to the SMTP server
-	conn, err := smtp.Dial(fmt.Sprintf("%s:%d", config.SmtpServer, config.SmtpPort))
+	// Establish the SMTP client
+	client, err := smtp.NewClient(conn, config.SmtpServer)
 	if err != nil {
 		return &smtp.Client{}, err
 	}
 
 	// Authenticate
-	if err := conn.Auth(auth); err != nil {
+	if err := client.Auth(auth); err != nil {
 		return &smtp.Client{}, err
 	}
 
 	// Set the sender
-	if err := conn.Mail(config.SenderEmail); err != nil {
+	if err := client.Mail(config.SenderEmail); err != nil {
 		return &smtp.Client{}, err
 	}
 
-	return conn, nil
+	return client, nil
 }

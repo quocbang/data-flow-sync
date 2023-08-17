@@ -159,7 +159,7 @@ func (s service) VerifyAccount(ctx context.Context, req repositories.VerifyAccou
 	return repositories.VerifyAccountReply{}, nil
 }
 
-func optCreator(receiver string) int {
+func optCreator() int {
 	// Initialize the random number generator
 	rand.Seed(time.Now().UnixNano())
 
@@ -174,6 +174,9 @@ func (s service) SendMail(ctx context.Context, recipience string) error {
 		return err
 	}
 
+	// generate otp
+	otp := optCreator()
+
 	// Compose the HTML email message
 	message := "To: " + recipience + "\n" +
 		"Subject: OTP verifier\n" +
@@ -182,7 +185,8 @@ func (s service) SendMail(ctx context.Context, recipience string) error {
 		"\n" +
 		"<html><body>" +
 		"<h1>Hello from Go!</h1>" +
-		"<p>This is an <strong>HTML-formatted</strong> email.</p>" +
+		"<p> your OTP is<strong>" + fmt.Sprintf("%v", otp) + "</strong></p>" +
+		"<p>this will be available within two minute </p>" +
 		"</body></html>"
 
 	wc, err := s.smtp.Data()
