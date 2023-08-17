@@ -175,6 +175,92 @@ paths:
                   $ref: "#/definitions/MergeRequest"
 
   # station zone
+  /station/upload/{mergeRequestID}:
+    post:
+      summary: upload station
+      operationId: UploadStation
+      tags:
+        - "station"
+      security:
+        - api_key: []
+      parameters:
+        - in: path
+          type: string
+          required: true
+          name: mergeRequestID
+      responses:
+        200:
+          description: OK
+  /station/different/{mergeRequestID}:
+    get:
+      summary: get a diff of the file in the temporary area and target area
+      tags:
+        - "station"
+      operationId: GetStationDiff
+      parameters:
+        - in: path
+          required: true
+          name: mergeRequestID
+          type: string
+      security:
+        - api_key: []
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: "#/definitions/Station"
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /station/merge-request:
+    post:
+      summary: create merge request station
+      operationId: CreateMergeRequestStation
+      tags:
+        - "station"
+      security:
+        - api_key: []
+      parameters:
+        - in: body
+          name: body
+          schema:
+            properties: 
+              TemporaryPath:
+                type: string
+                description: temporary file path
+              TargetPath:
+                type: string
+                description: target file path
+      responses:
+        200:
+          description: OK
+    get:
+      summary: get station merge requests
+      operationId: ListMergeRequestsStation
+      tags:
+        - "station"
+      security:
+        - api_key: []
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: "#/definitions/MergeRequest"
 
   # material-resource zone
 
@@ -236,6 +322,34 @@ definitions:
       Max:
         type: integer
         description: max
+    
+  Station:
+    type: object
+    properties:
+      ID:
+        type: string
+        description: station ID 
+      Sub-company:
+        type: string
+        description: sub-company
+      Factory:
+        type: string
+        description: factory
+      DepartmentID:
+        type: string
+        description: department ID
+      Alias:
+        type: string
+        description: station name alias
+      Serial-number:
+        type: integer
+        description: serial-number
+      Description:
+        type: string
+        description: description
+      Devices:
+        type: string
+        description: devices
 
   MergeRequest:
     type: object
