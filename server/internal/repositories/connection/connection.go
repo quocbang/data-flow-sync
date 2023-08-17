@@ -1,14 +1,16 @@
 package connection
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/quocbang/data-flow-sync/server/config"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/connection/logging"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
 )
 
@@ -48,7 +50,9 @@ func NewPostgres(pgCf config.PostgresConfig) (*gorm.DB, error) {
 		pgCf.Name,
 		pgCf.Port,
 	)
-	db, err := gorm.Open(postgres.Open(connectString), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(connectString), &gorm.Config{
+		Logger: logging.NewGormLogger(),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +67,9 @@ func NewRedis(rdCf config.RedisConfig) (*redis.Client, error) {
 		Password: rdCf.Password,
 		DB:       rdCf.Database,
 	})
+	redis.SetLogger(logging.NewRedisLogger())
 
-	if err := rdb.Ping().Err(); err != nil {
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
 		return nil, err
 	}
 
