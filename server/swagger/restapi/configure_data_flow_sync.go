@@ -12,11 +12,15 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/swag"
+	"github.com/gorilla/handlers"
+	"github.com/rs/cors"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
 	"github.com/quocbang/data-flow-sync/server"
 	apiService "github.com/quocbang/data-flow-sync/server/api"
 	"github.com/quocbang/data-flow-sync/server/config"
+	mw "github.com/quocbang/data-flow-sync/server/middleware"
 	"github.com/quocbang/data-flow-sync/server/swagger/models"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
@@ -60,6 +64,9 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 
 	// configure the api here
 	api.ServeError = errors.ServeError
+
+	// initialize logger
+	setLogger(false)
 
 	// Set your custom logger if needed. Default one is log.Printf
 	// Expected interface func(string, ...interface{})
@@ -159,5 +166,47 @@ func setupMiddlewares(handler http.Handler) http.Handler {
 // The middleware configuration happens before anything, this middleware also applies to serving the swagger.json document.
 // So this is a good place to plug in a panic handling middleware, logging and metrics.
 func setupGlobalMiddleware(handler http.Handler) http.Handler {
+	handler = mw.LoggingMiddleware(handler)
+	handler = handlers.RecoveryHandler(handlers.PrintRecoveryStack(true))(handler)
+	handler = allowCORS(handler)
 	return handler
+}
+
+// setLogger replaces global logger and redirects STD logger.
+func setLogger(devMode bool) {
+	var config zap.Config
+
+	if devMode {
+		config = zap.NewDevelopmentConfig()
+	} else {
+		config = zap.NewProductionConfig()
+	}
+
+	logger, err := config.Build()
+	if err != nil {
+		log.Fatalln("failed to initialize logger", err)
+	}
+	zap.ReplaceGlobals(logger)
+	zap.RedirectStdLog(logger)
+	defer logger.Sync()
+	logger.Info("logger initialized")
+}
+
+func allowCORS(handler http.Handler) http.Handler {
+	return cors.New(
+		cors.Options{
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{
+				http.MethodGet,
+				http.MethodPost,
+				http.MethodPut,
+				http.MethodPatch,
+				http.MethodDelete,
+				http.MethodHead,
+				http.MethodOptions,
+			},
+			AllowedHeaders:   []string{"*"},
+			AllowCredentials: false,
+		},
+	).Handler(handler)
 }
