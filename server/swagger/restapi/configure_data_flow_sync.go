@@ -26,6 +26,7 @@ import (
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/limitary_hour"
+	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/station"
 )
 
 //go:generate swagger generate server --target ..\..\swagger --name DataFlowSync --spec ..\..\..\swagger.yml --principal models.Principal
@@ -135,6 +136,28 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 	if api.LimitaryHourUploadLimitaryHourHandler == nil {
 		api.LimitaryHourUploadLimitaryHourHandler = limitary_hour.UploadLimitaryHourHandlerFunc(func(params limitary_hour.UploadLimitaryHourParams, principal *models.Principal) middleware.Responder {
 			return middleware.NotImplemented("operation limitary_hour.UploadLimitaryHour has not yet been implemented")
+		})
+	}
+
+	// station api handler
+	if api.StationCreateMergeRequestStationHandler == nil {
+		api.StationCreateMergeRequestStationHandler = station.CreateMergeRequestStationHandlerFunc(func(params station.CreateMergeRequestStationParams, principal *models.Principal) middleware.Responder {
+			return middleware.NotImplemented("operation station.CreateMergeRequestStation has not yet been implemented")
+		})
+	}
+	if api.StationGetStationDiffHandler == nil {
+		api.StationGetStationDiffHandler = station.GetStationDiffHandlerFunc(func(params station.GetStationDiffParams, principal *models.Principal) middleware.Responder {
+			return middleware.NotImplemented("operation station.GetStationDiff has not yet been implemented")
+		})
+	}
+	if api.StationListMergeRequestsStationHandler == nil {
+		api.StationListMergeRequestsStationHandler = station.ListMergeRequestsStationHandlerFunc(func(params station.ListMergeRequestsStationParams, principal *models.Principal) middleware.Responder {
+			return middleware.NotImplemented("operation station.ListMergeRequestsStation has not yet been implemented")
+		})
+	}
+	if api.StationUploadStationHandler == nil {
+		api.StationUploadStationHandler = station.UploadStationHandlerFunc(func(params station.UploadStationParams, principal *models.Principal) middleware.Responder {
+			return middleware.NotImplemented("operation station.UploadStation has not yet been implemented")
 		})
 	}
 

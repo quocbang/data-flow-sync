@@ -348,7 +348,9 @@ definitions:
         type: string
         description: description
       Devices:
-        type: string
+        type: array
+        items:
+          type: string
         description: devices
 
   MergeRequest:
