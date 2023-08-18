@@ -159,14 +159,20 @@ func (s service) VerifyAccount(ctx context.Context, req repositories.VerifyAccou
 	return repositories.VerifyAccountReply{}, nil
 }
 
-func optCreator() int {
+func optCreator() string {
 	// Initialize the random number generator
 	rand.Seed(time.Now().UnixNano())
 
 	// Generate a random 6-digit number
-	randOTP := rand.Intn(900000) + 100000
+	randOTP := rand.Intn(999999)
 
-	return randOTP
+	stringOTP := fmt.Sprintf("%v", randOTP)
+
+	for i := 0; i < 6-len(stringOTP); i++ {
+		stringOTP = "0" + stringOTP
+	}
+
+	return stringOTP
 }
 
 func (s service) SendMail(ctx context.Context, recipience string) error {
@@ -178,16 +184,16 @@ func (s service) SendMail(ctx context.Context, recipience string) error {
 	otp := optCreator()
 
 	// Compose the HTML email message
+	// html active form
 	message := "To: " + recipience + "\n" +
 		"Subject: OTP verifier\n" +
 		"MIME-Version: 1.0\n" +
 		"Content-Type: text/html; charset=\"utf-8\"\n" +
 		"\n" +
-		"<html><body>" +
-		"<h1>Hello from Go!</h1>" +
-		"<p> your OTP is<strong>" + fmt.Sprintf("%v", otp) + "</strong></p>" +
-		"<p>this will be available within two minute </p>" +
-		"</body></html>"
+		"<html><body><div class='active-form' style='display: flex; justify-content: center'>" +
+		"<div style='background-color: rgba(228, 241, 254, 1); height: 600px; width: 600px;text-align: center; font-size: large'>" +
+		"<h1>Data Flow Sync active mail</h1><p>you just registered an account at data flow sync, here is verify code:</p><h1>" + otp + "</h1>" +
+		"<p><strong>*Note:</strong> this code will be available within two minute </p></div></div></body></html>"
 
 	wc, err := s.smtp.Data()
 	if err != nil {
