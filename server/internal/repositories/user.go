@@ -1,18 +1,24 @@
 package repositories
 
+import "time"
+
 type SignInRequest struct {
 	UserID   string
 	Password string
+	Options  Option
 }
 
 type SignInReply struct {
 	Token string
 }
 
+type Option struct {
+	TokenLifeTime time.Duration
+}
+
 type CreateAccountRequest struct {
-	UserID   string  `validate:"required"`
-	Password string  `validate:"required"`
-	Roles    []int64 `validate:"required,dive,gte=0"`
+	UserID   string
+	Password string
 }
 
 type CreateAccountReply struct {
@@ -20,5 +26,5 @@ type CreateAccountReply struct {
 }
 
 type DeleteAccountRequest struct {
-	UserID string `validate:"required"`
+	UserID string
 }

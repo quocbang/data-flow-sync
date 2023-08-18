@@ -45,11 +45,14 @@ paths:
           required: true
           schema:
             type: object
+            required:
+              - "username"
+              - "password"
             properties:
               username:
-                type: string
+                type: string              
               password:
-                type: string
+                type: string                
       responses:
         200:
           description: "Successful login"
@@ -66,16 +69,21 @@ paths:
           description: Internal Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+        default:
+          $ref: "#/responses/Default"
   /user/logout:
     post:
       summary: user logout
       operationId: Logout
       tags:
         - "account"
-      security: []
+      security: 
+        - api_key: []
       responses:
         200:
           description: OK
+        default:
+          $ref: "#/responses/Default"
 
   # limitary zone
   /limitary-hour/upload/{mergeRequestID}:
@@ -191,18 +199,13 @@ definitions:
         type: string
         description: username
         example: userid
-      roles:
-        $ref: "#/definitions/Roles"
-
-  Roles:
-    type: array
-    description: 使用者角色
-    items:
-      $ref: "#/definitions/Role"
-
-  Role:
-    type: integer
-    x-omitempty: false  
+      role:
+        type: integer
+        description: user role
+        x-omitempty: false        
+      IsUnspecifiedUser:
+        type: boolean
+        description: true if the user has not verified
 
   ErrorResponse:
     type: object
@@ -229,6 +232,7 @@ definitions:
       Min:
         type: integer
         description: min
+        minLength: 3          
       Max:
         type: integer
         description: max

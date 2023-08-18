@@ -26,9 +26,9 @@ type DatabaseGroup struct {
 }
 
 type Configs struct {
-	UIDir        string              `yaml:"ui-dir"`
-	Database     DatabaseGroup       `yaml:"database"`
-	AccessDir    []string            `yaml:"access-dir"`
-	MRExpiryTime int64               `yaml:"mr-expiry-time"`
-	Roles        map[string][]string `yaml:"roles"`
+	UIDir         string        `yaml:"ui-dir"`
+	Database      DatabaseGroup `yaml:"database"`
+	AccessDir     []string      `yaml:"access-dir"`
+	MRExpiryTime  int64         `yaml:"mr-expiry-time"`
+	TokenLifeTime int32         `yaml:"token-life-time"`
 }
