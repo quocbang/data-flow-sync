@@ -111,7 +111,7 @@ func (s service) SignOut(ctx context.Context, token string) error {
 	}
 
 	timeRemaining := time.Until(time.Unix(claims.ExpiresAt, 0))
-	reply := s.rd.Set(token, nil, timeRemaining)
+	reply := s.rd.Set(ctx, token, nil, timeRemaining)
 
 	return reply.Err()
 }
@@ -119,7 +119,7 @@ func (s service) SignOut(ctx context.Context, token string) error {
 // Authorization verify token and parse it to check auth.
 func (s service) Authorization(ctx context.Context, token string) (*models.JwtCustomClaims, error) {
 	// check black list
-	dataCount, err := s.getBlackList(token)
+	dataCount, err := s.getBlackList(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +140,6 @@ func (s service) Authorization(ctx context.Context, token string) (*models.JwtCu
 }
 
 // getBlackList get data in black list.
-func (s service) getBlackList(token string) (int64, error) { // return row number and error.
-	return s.rd.Exists(token).Result()
+func (s service) getBlackList(ctx context.Context, token string) (int64, error) { // return row number and error.
+	return s.rd.Exists(ctx, token).Result()
 }

@@ -3,7 +3,6 @@ module github.com/quocbang/data-flow-sync/server
 go 1.20
 
 require (
-	github.com/brianvoe/gofakeit/v6 v6.23.1
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-openapi/errors v0.20.4
 	github.com/go-openapi/loads v0.21.2
@@ -15,14 +14,11 @@ require (
 	github.com/go-redis/redis/v9 v9.0.0-rc.2
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/protobuf v1.5.3
-	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
-	github.com/jackc/pgx/v5 v5.3.1
+	github.com/jackc/pgx/v5 v5.4.3
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/lib/pq v1.10.9
 	github.com/rs/cors v1.9.0
 	github.com/rs/xid v1.5.0
-	go.uber.org/zap v1.25.0
 	github.com/stretchr/testify v1.8.2
 	go.uber.org/zap v1.25.0
 	golang.org/x/crypto v0.12.0
@@ -34,8 +30,8 @@ require (
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
@@ -44,7 +40,6 @@ require (
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.4.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

@@ -115,7 +115,7 @@ func (s *Suite) TestLogOut() {
 		mockServer := s.NewMockServer(&mockRepo.Mock, setupmock.MockServerOptions{})
 
 		// Act
-		response := mockServer.Account.Logout(goodParams)
+		response := mockServer.Account.Logout(goodParams, nil)
 
 		// Assert
 		_, ok := response.(*account.LogoutOK)

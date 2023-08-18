@@ -1,10 +1,11 @@
 package suite
 
 import (
+	"context"
 	"log"
 	"os"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v9"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -70,7 +71,7 @@ func (s *SuiteConfig) ClearPostgresData() error {
 }
 
 func (s *SuiteConfig) ClearRedisData() error {
-	return s.RD.FlushDB().Err()
+	return s.RD.FlushDB(context.Background()).Err()
 }
 
 func init() {

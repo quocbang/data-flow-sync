@@ -73,7 +73,7 @@ func (a Authorization) Login(params account.LoginParams) middleware.Responder {
 	})
 }
 
-func (a Authorization) Logout(params account.LogoutParams) middleware.Responder {
+func (a Authorization) Logout(params account.LogoutParams, principal *models.Principal) middleware.Responder {
 	token := params.HTTPRequest.Header.Get(AuthorizationKey)
 
 	ctx := context.Background()

@@ -77,7 +77,8 @@ paths:
       operationId: Logout
       tags:
         - "account"
-      security: []
+      security: 
+        - api_key: []
       responses:
         200:
           description: OK

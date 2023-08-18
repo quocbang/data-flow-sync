@@ -128,7 +128,7 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 		})
 	}
 	if api.AccountLogoutHandler == nil {
-		api.AccountLogoutHandler = account.LogoutHandlerFunc(func(params account.LogoutParams) middleware.Responder {
+		api.AccountLogoutHandler = account.LogoutHandlerFunc(func(params account.LogoutParams, principal *models.Principal) middleware.Responder {
 			return middleware.NotImplemented("operation account.Logout has not yet been implemented")
 		})
 	}

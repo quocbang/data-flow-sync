@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-openapi/swag"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v9"
 	"github.com/jessevdk/go-flags"
 	"github.com/quocbang/data-flow-sync/server/config"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
