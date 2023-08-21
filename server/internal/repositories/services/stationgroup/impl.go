@@ -1,7 +1,7 @@
 package stationgroup
 
 import (
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v9"
 	"gorm.io/gorm"
 
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"

@@ -4,19 +4,12 @@ package restapi
 
 import (
 	"crypto/tls"
-	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
-	"github.com/go-openapi/swag"
-	"gopkg.in/yaml.v3"
 
-	"github.com/quocbang/data-flow-sync/server"
-	apiService "github.com/quocbang/data-flow-sync/server/api"
-	"github.com/quocbang/data-flow-sync/server/config"
 	"github.com/quocbang/data-flow-sync/server/swagger/models"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
@@ -25,39 +18,11 @@ import (
 
 //go:generate swagger generate server --target ..\..\swagger --name DataFlowSync --spec ..\..\..\swagger.yml --principal models.Principal
 
-var (
-	options        = new(config.Options)
-	configurations = new(config.Configs)
-)
-
 func configureFlags(api *operations.DataFlowSyncAPI) {
-	api.CommandLineOptionsGroups = append(api.CommandLineOptionsGroups, swag.CommandLineOptionsGroup{
-		ShortDescription: "Configuration Options",
-		LongDescription:  "Configuration Options",
-		Options:          options,
-	})
-}
-
-func parseConfig(filePath string) (*config.Configs, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	var cfs config.Configs
-	if err := yaml.Unmarshal(data, &cfs); err != nil {
-		return nil, err
-	}
-
-	return &cfs, nil
+	// api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{ ... }
 }
 
 func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
-	configs, err := parseConfig(options.ConfigPath)
-	if err != nil {
-		log.Fatalf("failed to parse config file, error: %v", err)
-	}
-
 	// configure the api here
 	api.ServeError = errors.ServeError
 
@@ -74,18 +39,6 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 	api.JSONConsumer = runtime.JSONConsumer()
 
 	api.JSONProducer = runtime.JSONProducer()
-
-	repo, err := server.RegisterRepository(configs.Database)
-	if err != nil {
-		log.Fatalf("failed to register repository, error: %v", err)
-	}
-
-	serviceConfig := apiService.ServiceConfig{
-		Repo:         repo,
-		MRExpiryTime: configs.MRExpiryTime,
-	}
-
-	apiService.RegisterAPI(api, serviceConfig)
 
 	// Applies when the "x-data-flow-sync-auth-key" header is set
 	if api.APIKeyAuth == nil {
@@ -121,13 +74,28 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 		})
 	}
 	if api.AccountLogoutHandler == nil {
-		api.AccountLogoutHandler = account.LogoutHandlerFunc(func(params account.LogoutParams) middleware.Responder {
+		api.AccountLogoutHandler = account.LogoutHandlerFunc(func(params account.LogoutParams, principal *models.Principal) middleware.Responder {
 			return middleware.NotImplemented("operation account.Logout has not yet been implemented")
+		})
+	}
+	if api.AccountSendMailHandler == nil {
+		api.AccountSendMailHandler = account.SendMailHandlerFunc(func(params account.SendMailParams, principal *models.Principal) middleware.Responder {
+			return middleware.NotImplemented("operation account.SendMail has not yet been implemented")
+		})
+	}
+	if api.AccountSignupHandler == nil {
+		api.AccountSignupHandler = account.SignupHandlerFunc(func(params account.SignupParams) middleware.Responder {
+			return middleware.NotImplemented("operation account.Signup has not yet been implemented")
 		})
 	}
 	if api.LimitaryHourUploadLimitaryHourHandler == nil {
 		api.LimitaryHourUploadLimitaryHourHandler = limitary_hour.UploadLimitaryHourHandlerFunc(func(params limitary_hour.UploadLimitaryHourParams, principal *models.Principal) middleware.Responder {
 			return middleware.NotImplemented("operation limitary_hour.UploadLimitaryHour has not yet been implemented")
+		})
+	}
+	if api.AccountVerifyAccountHandler == nil {
+		api.AccountVerifyAccountHandler = account.VerifyAccountHandlerFunc(func(params account.VerifyAccountParams) middleware.Responder {
+			return middleware.NotImplemented("operation account.VerifyAccount has not yet been implemented")
 		})
 	}
 

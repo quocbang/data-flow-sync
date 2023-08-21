@@ -1,15 +1,18 @@
-package servicestest
+package suite
 
 import (
+	"context"
 	"log"
 	"time"
 
 	"bou.ke/monkey"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v9"
+	"github.com/stretchr/testify/suite"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
+
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 )
 
 type SuiteConfig struct {
@@ -58,7 +61,7 @@ func (s *SuiteConfig) ClearData() error {
 			return err
 		}
 	}
-	err := s.rd.FlushDB().Err()
+	err := s.rd.FlushDB(context.Background()).Err()
 	if err != nil {
 		return err
 	}
@@ -86,10 +89,27 @@ func (s SuiteConfig) TearDownTest() {
 	s.tearDownTime()
 }
 
-func (s SuiteConfig) TearDownSuite() {
-	s.repo.Close()
-}
-
 func (s *SuiteConfig) GetDm() repositories.Repositories {
 	return s.repo
+}
+
+func (s *SuiteConfig) GetRedis() *redis.Client {
+	return s.rd
+}
+
+var logger *zap.Logger
+
+func (suite *SuiteConfig) TearDownSuite() {
+	err := suite.repo.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func init() {
+	var err error
+	logger, err = zap.NewDevelopment()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -3,9 +3,10 @@ package account
 import (
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
 	servicestest "github.com/quocbang/data-flow-sync/server/internal/repositories/servicestest/internal/suite"
-	"github.com/stretchr/testify/suite"
 )
 
 type Suite struct {
