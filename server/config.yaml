@@ -3,7 +3,7 @@ database:
   postgres:
     address: localhost
     port: 5432
-    name: postgres
+    name: golang
     schema: maindb
     username: postgres
     password: thaithai 

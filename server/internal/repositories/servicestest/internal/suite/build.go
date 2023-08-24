@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"bou.ke/monkey"
-	"github.com/go-redis/redis/v9"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 	"gorm.io/gorm"

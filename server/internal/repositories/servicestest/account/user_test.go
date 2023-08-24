@@ -4,18 +4,33 @@ import (
 	"context"
 	"time"
 
+	"bou.ke/monkey"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/account"
 )
 
 func (s *Suite) TestSendMail() {
 	assert := s.Assertions
 	ctx := context.Background()
-	err := s.GetDm().Account().SendMail(ctx, repositories.SendMailRequest{
-		UserID: "thai",
-		Email:  "1194030275.dnu@gmail.com",
+
+	// Arrange
+	_, err := s.GetDm().Account().SignUp(ctx, repositories.SignUpAccountRequest{
+		CreateAccountRequest: repositories.CreateAccountRequest{
+			UserID:   "james",
+			Email:    "mori@kenda.com.tw",
+			Password: "test_password",
+		},
 	})
 	assert.NoError(err)
-	otp, err := s.GetRedis().Get(ctx, "thai").Result()
+
+	// Act
+	err = s.GetDm().Account().SendMail(ctx, repositories.SendMailRequest{
+		Email: "mori@kenda.com.tw",
+	})
+
+	// Assert
+	assert.NoError(err)
+	otp, err := s.GetRedis().Get(ctx, "mori@kenda.com.tw").Result()
 	assert.NoError(err)
 	assert.NotEqual("", otp)
 }
@@ -29,7 +44,7 @@ func (s *Suite) TestSignUp() {
 	_, err := s.GetDm().Account().SignUp(ctx, repositories.SignUpAccountRequest{
 		CreateAccountRequest: repositories.CreateAccountRequest{
 			UserID:   "james",
-			Email:    "1194030275.dnu@gmail.com",
+			Email:    "mori@kenda.com.tw",
 			Password: "test_password",
 		},
 	})
@@ -37,8 +52,8 @@ func (s *Suite) TestSignUp() {
 
 	// Assert
 	_, err = s.GetDm().Account().SignIn(ctx, repositories.SignInRequest{
-		UserID:   "james",
-		Password: "test_password",
+		Identifier: "james",
+		Password:   "test_password",
 		Options: repositories.Option{
 			TokenLifeTime: 2 * time.Minute,
 		},
@@ -47,12 +62,35 @@ func (s *Suite) TestSignUp() {
 
 }
 
-func (s *Suite) TestUpdateRole() {
-	// assert := s.Assertions
-	// ctx := context.Background()
+func (s *Suite) TestVerifyAccount() {
+	assert := s.Assertions
+	ctx := context.Background()
+	p := monkey.Patch(account.OptCreator, func() string {
+		return "111111"
+	})
+	defer p.Unpatch()
 
-	// // Arrange
-	// s.GetDm().Account().SignUp()
+	// Arrange
+	_, err := s.GetDm().Account().SignUp(ctx, repositories.SignUpAccountRequest{
+		CreateAccountRequest: repositories.CreateAccountRequest{
+			UserID:   "james",
+			Email:    "mori@kenda.com.tw",
+			Password: "test_password",
+		},
+	})
+	assert.NoError(err)
+
+	// Act
+	_, err = s.GetDm().Account().VerifyAccount(ctx, repositories.VerifyAccountRequest{
+		Otp:   "111111",
+		Email: "mori@kenda.com.tw",
+		Option: repositories.Option{
+			TokenLifeTime: 2 * time.Minute,
+		},
+	})
+
+	// Assert
+	assert.NoError(err)
 }
 
 // TODO: wait SignUp method

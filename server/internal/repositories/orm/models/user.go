@@ -14,8 +14,8 @@ import (
 type Account struct {
 	UserID   string      `gorm:"type:text;primaryKey"`
 	Email    string      `gorm:"type:text;unique"`
-	Password []byte      `gorm:"type:bytea; not null"`
-	Roles    roles.Roles `gorm:"type:not null"`
+	Password []byte      `gorm:"type:bytea;NOT NULL"`
+	Roles    roles.Roles `gorm:"type:smallint;NOT NULL"`
 }
 
 func (a *Account) TableName() string {
@@ -26,6 +26,7 @@ type JwtCustomClaims struct {
 	UserID            string      `json:"user_id"`
 	Role              roles.Roles `json:"role"`
 	IsUnspecifiedUser bool        `json:"is_unspecified_user"`
+	Email             string      `json:"email"`
 	jwt.StandardClaims
 }
 
@@ -41,6 +42,7 @@ func (a Account) GenerateJWT(ctx context.Context, tokenLifeTime time.Duration, s
 		UserID:            a.UserID,
 		Role:              a.Roles,
 		IsUnspecifiedUser: a.IsUnSpecifiedUser(),
+		Email:             a.Email,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * tokenLifeTime).Unix(),
 		},

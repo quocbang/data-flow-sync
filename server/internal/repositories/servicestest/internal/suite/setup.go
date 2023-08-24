@@ -4,12 +4,13 @@ import (
 	"fmt"
 
 	"github.com/go-openapi/swag"
-	"github.com/go-redis/redis/v9"
 	"github.com/jessevdk/go-flags"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
+
 	"github.com/quocbang/data-flow-sync/server/config"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/connection"
-	"gorm.io/gorm"
 )
 
 var postGresTest struct {
@@ -99,17 +100,17 @@ func newTestDataManager() (dm repositories.Repositories, db *gorm.DB, rd *redis.
 		},
 	}
 
+	rd, err = connection.NewRedis(conn.Redis)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	dm, err = connection.New(conn, connection.MaybeMigrate())
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	db, err = connection.NewPostgres(conn.Postgres)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	rd, err = connection.NewRedis(conn.Redis)
 	if err != nil {
 		return nil, nil, nil, err
 	}

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/smtp"
 
-	"github.com/go-redis/redis/v9"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -46,12 +46,13 @@ func parseOption(opts ...Options) *options {
 }
 
 func NewPostgres(pgCf config.PostgresConfig) (*gorm.DB, error) {
-	connectString := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
+	connectString := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d search_path=%s",
 		pgCf.Address,
 		pgCf.UserName,
 		pgCf.Password,
 		pgCf.Name,
 		pgCf.Port,
+		pgCf.Schema,
 	)
 	db, err := gorm.Open(postgres.Open(connectString), &gorm.Config{
 		Logger: logging.NewGormLogger(),
@@ -66,9 +67,11 @@ func NewPostgres(pgCf config.PostgresConfig) (*gorm.DB, error) {
 // NewRedis is connect to redis database.
 func NewRedis(rdCf config.RedisConfig) (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     rdCf.Address,
-		Password: rdCf.Password,
-		DB:       rdCf.Database,
+		Addr:         rdCf.Address,
+		Password:     rdCf.Password,
+		DB:           rdCf.Database,
+		WriteTimeout: 0,
+		ReadTimeout:  0,
 	})
 	redis.SetLogger(logging.NewRedisLogger())
 
@@ -160,11 +163,6 @@ func NewSMTPConnection(config config.SmtpConfig) (*smtp.Client, error) {
 
 	// Authenticate
 	if err := client.Auth(auth); err != nil {
-		return &smtp.Client{}, err
-	}
-
-	// Set the sender
-	if err := client.Mail(config.SenderEmail); err != nil {
 		return &smtp.Client{}, err
 	}
 

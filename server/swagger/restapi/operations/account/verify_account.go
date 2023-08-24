@@ -12,19 +12,21 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+
+	"github.com/quocbang/data-flow-sync/server/swagger/models"
 )
 
 // VerifyAccountHandlerFunc turns a function with the right signature into a verify account handler
-type VerifyAccountHandlerFunc func(VerifyAccountParams) middleware.Responder
+type VerifyAccountHandlerFunc func(VerifyAccountParams, *models.Principal) middleware.Responder
 
 // Handle executing the request and returning a response
-func (fn VerifyAccountHandlerFunc) Handle(params VerifyAccountParams) middleware.Responder {
-	return fn(params)
+func (fn VerifyAccountHandlerFunc) Handle(params VerifyAccountParams, principal *models.Principal) middleware.Responder {
+	return fn(params, principal)
 }
 
 // VerifyAccountHandler interface for that can handle valid verify account params
 type VerifyAccountHandler interface {
-	Handle(VerifyAccountParams) middleware.Responder
+	Handle(VerifyAccountParams, *models.Principal) middleware.Responder
 }
 
 // NewVerifyAccount creates a new http.Handler for the verify account operation
@@ -48,12 +50,25 @@ func (o *VerifyAccount) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		*r = *rCtx
 	}
 	var Params = NewVerifyAccountParams()
+	uprinc, aCtx, err := o.Context.Authorize(r, route)
+	if err != nil {
+		o.Context.Respond(rw, r, route.Produces, route, err)
+		return
+	}
+	if aCtx != nil {
+		*r = *aCtx
+	}
+	var principal *models.Principal
+	if uprinc != nil {
+		principal = uprinc.(*models.Principal) // this is really a models.Principal, I promise
+	}
+
 	if err := o.Context.BindValidRequest(r, route, &Params); err != nil { // bind params
 		o.Context.Respond(rw, r, route.Produces, route, err)
 		return
 	}
 
-	res := o.Handler.Handle(Params) // actually handle the request
+	res := o.Handler.Handle(Params, principal) // actually handle the request
 	o.Context.Respond(rw, r, route.Produces, route, res)
 
 }

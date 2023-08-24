@@ -70,7 +70,7 @@ func NewDataFlowSyncAPI(spec *loads.Document) *DataFlowSyncAPI {
 		LimitaryHourUploadLimitaryHourHandler: limitary_hour.UploadLimitaryHourHandlerFunc(func(params limitary_hour.UploadLimitaryHourParams, principal *models.Principal) middleware.Responder {
 			return middleware.NotImplemented("operation limitary_hour.UploadLimitaryHour has not yet been implemented")
 		}),
-		AccountVerifyAccountHandler: account.VerifyAccountHandlerFunc(func(params account.VerifyAccountParams) middleware.Responder {
+		AccountVerifyAccountHandler: account.VerifyAccountHandlerFunc(func(params account.VerifyAccountParams, principal *models.Principal) middleware.Responder {
 			return middleware.NotImplemented("operation account.VerifyAccount has not yet been implemented")
 		}),
 

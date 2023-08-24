@@ -33,6 +33,6 @@ type AccountServices interface {
 	Login(params account.LoginParams) middleware.Responder
 	Logout(params account.LogoutParams, principal *models.Principal) middleware.Responder
 	SignUp(params account.SignupParams) middleware.Responder
-	VerifyAccount(params account.VerifyAccountParams) middleware.Responder
+	VerifyAccount(params account.VerifyAccountParams, principal *models.Principal) middleware.Responder
 	SendMail(params account.SendMailParams, principal *models.Principal) middleware.Responder
 }

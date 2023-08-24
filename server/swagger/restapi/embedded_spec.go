@@ -310,10 +310,10 @@ func init() {
                 "email": {
                   "type": "string"
                 },
-                "password": {
+                "name": {
                   "type": "string"
                 },
-                "retype": {
+                "password": {
                   "type": "string"
                 }
               }
@@ -347,7 +347,11 @@ func init() {
     },
     "/user/verify-account": {
       "post": {
-        "security": [],
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
         "tags": [
           "account"
         ],
@@ -464,6 +468,10 @@ func init() {
     },
     "Principal": {
       "properties": {
+        "Email": {
+          "description": "user's email",
+          "type": "string"
+        },
         "ID": {
           "description": "username",
           "type": "string",
@@ -838,10 +846,10 @@ func init() {
                 "email": {
                   "type": "string"
                 },
-                "password": {
+                "name": {
                   "type": "string"
                 },
-                "retype": {
+                "password": {
                   "type": "string"
                 }
               }
@@ -878,7 +886,11 @@ func init() {
     },
     "/user/verify-account": {
       "post": {
-        "security": [],
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
         "tags": [
           "account"
         ],
@@ -1011,6 +1023,10 @@ func init() {
     },
     "Principal": {
       "properties": {
+        "Email": {
+          "description": "user's email",
+          "type": "string"
+        },
         "ID": {
           "description": "username",
           "type": "string",

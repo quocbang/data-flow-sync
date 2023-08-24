@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -49,14 +50,15 @@ func (a Authorization) Auth(token string) (*models.Principal, error) {
 	return &models.Principal{
 		ID:                claims.UserID,
 		Role:              int64(claims.Role),
+		Email:             claims.Email,
 		IsUnspecifiedUser: claims.IsUnspecifiedUser,
 	}, nil
 }
 
 func (a Authorization) Login(params account.LoginParams) middleware.Responder {
 	signInRequest := repositories.SignInRequest{
-		UserID:   *params.Login.Username,
-		Password: *params.Login.Password,
+		Identifier: *params.Login.Username,
+		Password:   *params.Login.Password,
 		Options: repositories.Option{
 			TokenLifeTime: a.tokenLifeTime,
 		},
@@ -84,14 +86,64 @@ func (a Authorization) Logout(params account.LogoutParams, principal *models.Pri
 }
 
 func (a Authorization) SignUp(params account.SignupParams) middleware.Responder {
+	signUpRequest := repositories.SignUpAccountRequest{
+		CreateAccountRequest: repositories.CreateAccountRequest{
+			UserID:   params.Signup.Name,
+			Email:    params.Signup.Email,
+			Password: params.Signup.Password,
+		},
+		Option: repositories.Option{
+			TokenLifeTime: 5 * time.Minute,
+		},
+	}
+	ctx := context.Background()
 
-	return nil
+	reply, err := a.repo.Account().SignUp(ctx, signUpRequest)
+	if err != nil {
+		return utils.ParseError(ctx, account.NewSignupDefault(http.StatusInternalServerError), err)
+	}
+	return account.NewLoginOK().WithPayload(&models.Token{
+		Token: reply.Token,
+	})
 }
 
-func (a Authorization) VerifyAccount(parmas account.VerifyAccountParams) middleware.Responder {
-	return nil
+func (a Authorization) VerifyAccount(params account.VerifyAccountParams, principal *models.Principal) middleware.Responder {
+	ctx := context.Background()
+	if !principal.IsUnspecifiedUser {
+		return utils.ParseError(ctx, account.NewVerifyAccountDefault(http.StatusBadRequest), fmt.Errorf("user been verified"))
+	}
+	verifyRequest := repositories.VerifyAccountRequest{
+		Otp:   params.AccountVerify.Otp,
+		Email: principal.Email,
+		Option: repositories.Option{
+			TokenLifeTime: 5 * time.Minute,
+		},
+	}
+
+	reply, err := a.repo.Account().VerifyAccount(ctx, verifyRequest)
+	if err != nil {
+		return utils.ParseError(ctx, account.NewVerifyAccountDefault(http.StatusInternalServerError), err)
+	}
+
+	return account.NewVerifyAccountOK().WithPayload(&models.Token{
+		Token: reply.Token,
+	})
 }
 
 func (a Authorization) SendMail(params account.SendMailParams, principal *models.Principal) middleware.Responder {
-	return nil
+	ctx := context.Background()
+	if !principal.IsUnspecifiedUser {
+		return utils.ParseError(ctx, account.NewVerifyAccountDefault(http.StatusBadRequest), fmt.Errorf("user been verified"))
+	}
+
+	sendMailRequest := repositories.SendMailRequest{
+		Email: principal.Email,
+	}
+
+	err := a.repo.Account().SendMail(ctx, sendMailRequest)
+	if err != nil {
+		return utils.ParseError(ctx, account.NewSendMailDefault(http.StatusInternalServerError), err)
+	}
+
+	return account.NewSendMailOK()
 }

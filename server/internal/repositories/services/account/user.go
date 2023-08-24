@@ -4,18 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/smtp"
 	"os"
 	"time"
 
-	"github.com/go-redis/redis/v9"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	e "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
+	"github.com/quocbang/data-flow-sync/server/utils/mail"
 	"github.com/quocbang/data-flow-sync/server/utils/roles"
 )
 
@@ -36,9 +38,11 @@ func NewService(pg *gorm.DB, rd *redis.Client, sm *smtp.Client) repositories.Acc
 }
 
 // getAccount definition.
-func (s service) getAccount(ctx context.Context, userID string) (models.Account, error) {
+func (s service) GetAccount(ctx context.Context, Identifier string) (models.Account, error) {
 	user := models.Account{}
-	if err := s.pg.Where(`id=?`, userID).Take(&user).Error; err != nil {
+	err := s.pg.Where(`user_id=?`, Identifier).Take(&user).Error
+	if err != nil {
+		err = s.pg.Where(`email=?`, Identifier).Take(&user).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.Account{}, e.Error{
 				Code:    e.Code_ACCOUNT_NOT_FOUND,
@@ -79,7 +83,7 @@ func (s service) DeleteAccount(ctx context.Context, req repositories.DeleteAccou
 
 // SignIn is access system with user and password
 func (s service) SignIn(ctx context.Context, req repositories.SignInRequest) (repositories.SignInReply, error) {
-	userInfo, err := s.getAccount(ctx, req.UserID)
+	userInfo, err := s.GetAccount(ctx, req.Identifier)
 	if err != nil {
 		return repositories.SignInReply{}, err
 	}
@@ -150,8 +154,8 @@ func (s service) getBlackList(ctx context.Context, token string) (int64, error) 
 }
 
 // UpdateRole updates the role for specified account
-func (s service) UpdateUserRole(ctx context.Context, user string) (repositories.CommonUpdateAndDeleteReply, error) {
-	reply := s.pg.Model(new(models.Account)).Where(`user_id = ?`).Update("roles", roles.Roles_USER)
+func (s service) UpdateToUserRole(ctx context.Context, email string) (repositories.CommonUpdateAndDeleteReply, error) {
+	reply := s.pg.Model(&models.Account{}).Where(`email = ?`, email).Update("roles", roles.Roles_USER)
 	return repositories.CommonUpdateAndDeleteReply{RowsAffected: reply.RowsAffected}, reply.Error
 }
 
@@ -166,8 +170,8 @@ func (s service) SignUp(ctx context.Context, req repositories.SignUpAccountReque
 	}
 
 	reply, err := s.SignIn(ctx, repositories.SignInRequest{
-		UserID:   req.UserID,
-		Password: req.Password,
+		Identifier: req.UserID,
+		Password:   req.Password,
 		Options: repositories.Option{
 			TokenLifeTime: req.TokenLifeTime,
 		},
@@ -178,8 +182,7 @@ func (s service) SignUp(ctx context.Context, req repositories.SignUpAccountReque
 	}
 
 	if err := s.SendMail(ctx, repositories.SendMailRequest{
-		UserID: req.UserID,
-		Email:  req.Email,
+		Email: req.Email,
 	}); err != nil {
 		return repositories.SignInReply{}, err
 	}
@@ -189,7 +192,11 @@ func (s service) SignUp(ctx context.Context, req repositories.SignUpAccountReque
 
 func (s service) VerifyAccount(ctx context.Context, req repositories.VerifyAccountRequest) (repositories.VerifyAccountReply, error) {
 	// get otp of the account
-	actual, err := s.rd.Get(ctx, req.UserID).Result()
+	actual, err := s.rd.Get(ctx, req.Email).Result()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if req.Otp != actual {
 		return repositories.VerifyAccountReply{}, e.Error{
 			Code:    e.Code_WRONG_OPT,
@@ -200,19 +207,19 @@ func (s service) VerifyAccount(ctx context.Context, req repositories.VerifyAccou
 		return repositories.VerifyAccountReply{}, err
 	}
 
-	_, err = s.UpdateUserRole(ctx, req.UserID)
+	_, err = s.UpdateToUserRole(ctx, req.Email)
 	if err != nil {
 		return repositories.VerifyAccountReply{}, err
 	}
 
 	// Newly update user
-	newUser, err := s.getAccount(ctx, req.UserID)
+	newUser, err := s.GetAccount(ctx, req.Email)
 	if err != nil {
 		return repositories.VerifyAccountReply{}, err
 	}
 
 	// Generate the token for new user
-	// create JWT.
+	// create JWT.z
 	token, err := newUser.GenerateJWT(ctx, req.Option.TokenLifeTime, secretKey)
 	if err != nil {
 		return repositories.VerifyAccountReply{}, err
@@ -221,7 +228,7 @@ func (s service) VerifyAccount(ctx context.Context, req repositories.VerifyAccou
 	return repositories.VerifyAccountReply{Token: token}, nil
 }
 
-func optCreator() string {
+func OptCreator() string {
 	// Initialize the random number generator
 	rand.Seed(time.Now().UnixNano())
 
@@ -237,17 +244,22 @@ func optCreator() string {
 	return stringOTP
 }
 
-func (s service) SendMail(ctx context.Context, recipience repositories.SendMailRequest) error {
-	if err := s.smtp.Rcpt(recipience.Email); err != nil {
+func (s service) SendMail(ctx context.Context, req repositories.SendMailRequest) error {
+	// Set the sender
+	if err := s.smtp.Mail(mail.GetOtpMailSender()); err != nil {
+		return err
+	}
+
+	if err := s.smtp.Rcpt(req.Email); err != nil {
 		return err
 	}
 
 	// generate otp
-	otp := optCreator()
+	otp := OptCreator()
 
 	// Compose the HTML email message
 	// html active form
-	message := "To: " + recipience.Email + "\n" +
+	message := "To: " + req.Email + "\n" +
 		"Subject: OTP verifier\n" +
 		"MIME-Version: 1.0\n" +
 		"Content-Type: text/html; charset=\"utf-8\"\n" +
@@ -268,8 +280,8 @@ func (s service) SendMail(ctx context.Context, recipience repositories.SendMailR
 		return err
 	}
 
-	// Add otp to redis server with 2 minutes expire time
-	if err := s.addOTP(ctx, recipience.UserID, otp); err != nil {
+	// Add otp to redis server with 5 minutes expire time
+	if err := s.addOTP(ctx, req.Email, otp); err != nil {
 		return err
 	}
 

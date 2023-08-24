@@ -186,3 +186,78 @@ func (s *Suite) TestAuth() {
 		}.Error()), err)
 	}
 }
+
+func (s *Suite) TestSendMail() {
+	assertions := s.Assertions
+	testUserID := "james"
+	params := func() account.SendMailParams {
+		return account.SendMailParams{
+			HTTPRequest: s.HttpTestRequest(http.MethodPost, "user/send-mail", nil),
+		}
+	}
+
+	{ // good case
+		// Arrange
+		mockrepo := s.MockRepository()
+		mockrepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+			func() repositories.AccountServices {
+				acct := mocks.AccountServices{}
+				acct.EXPECT().SendMail(s.Context, &models.Principal{
+					ID:                testUserID,
+					IsUnspecifiedUser: true,
+					Role:              0,
+				}).ReturnArguments = mock.Arguments{
+					nil,
+				}
+				return &acct
+			}(),
+		}
+
+		mockServer := s.NewMockServer(&mockrepo.Mock, setupmock.MockServerOptions{})
+
+		// Act
+		response := mockServer.Account.SendMail(params(), &models.Principal{
+			ID:                testUserID,
+			IsUnspecifiedUser: true,
+			Role:              0,
+		})
+
+		// Assert
+		_, ok := response.(*account.LogoutOK)
+		assertions.True(ok)
+	}
+	{// bad case
+		// Arrange
+		mockrepo := s.MockRepository()
+		mockrepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+			func() repositories.AccountServices {
+				acct := mocks.AccountServices{}
+				acct.EXPECT().SendMail(s.Context, &models.Principal{
+					ID:                testUserID,
+					IsUnspecifiedUser: true,
+					Role:              0,
+				}).ReturnArguments = mock.Arguments{
+					repoErrors.Error{
+						Code: 0,
+						Details: "internal error",
+					},
+				}
+				return &acct
+			}(),
+		}
+
+		mockServer := s.NewMockServer(&mockrepo.Mock, setupmock.MockServerOptions{})
+
+		// Act
+		response := mockServer.Account.SendMail(params(), &models.Principal{
+			ID:                testUserID,
+			IsUnspecifiedUser: true,
+			Role:              0,
+		})
+
+		// Assert
+		assertions.(response.)
+
+		// utils.ParseError(ctx, account.NewSendMailDefault(http.StatusInternalServerError), err)
+	}
+}

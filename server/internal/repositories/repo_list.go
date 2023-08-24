@@ -20,11 +20,12 @@ type StationGroupServices interface {
 
 type AccountServices interface {
 	DeleteAccount(context.Context, DeleteAccountRequest) (CommonUpdateAndDeleteReply, error)
+	GetAccount(context.Context, string) (models.Account, error)
 	SignIn(context.Context, SignInRequest) (SignInReply, error)
 	SignOut(context.Context, string) error
 	SignUp(context.Context, SignUpAccountRequest) (SignInReply, error)
 	VerifyAccount(context.Context, VerifyAccountRequest) (VerifyAccountReply, error)
 	SendMail(context.Context, SendMailRequest) error
-	UpdateUserRole(context.Context, string) (CommonUpdateAndDeleteReply, error)
+	UpdateToUserRole(context.Context, string) (CommonUpdateAndDeleteReply, error)
 	Authorization(context.Context, string) (*models.JwtCustomClaims, error)
 }

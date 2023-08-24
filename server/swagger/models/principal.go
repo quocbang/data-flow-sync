@@ -17,6 +17,9 @@ import (
 // swagger:model Principal
 type Principal struct {
 
+	// user's email
+	Email string `json:"Email,omitempty"`
+
 	// username
 	// Example: userid
 	ID string `json:"ID,omitempty"`

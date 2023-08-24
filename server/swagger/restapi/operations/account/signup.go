@@ -66,11 +66,11 @@ type SignupBody struct {
 	// email
 	Email string `json:"email,omitempty"`
 
+	// name
+	Name string `json:"name,omitempty"`
+
 	// password
 	Password string `json:"password,omitempty"`
-
-	// retype
-	Retype string `json:"retype,omitempty"`
 }
 
 // Validate validates this signup body

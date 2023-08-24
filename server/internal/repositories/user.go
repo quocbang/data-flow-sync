@@ -3,9 +3,9 @@ package repositories
 import "time"
 
 type SignInRequest struct {
-	UserID   string
-	Password string
-	Options  Option
+	Identifier string
+	Password   string
+	Options    Option
 }
 
 type SignInReply commonWithToken
@@ -34,14 +34,13 @@ type DeleteAccountRequest struct {
 }
 
 type VerifyAccountRequest struct {
-	Otp    string
-	UserID string
+	Otp   string
+	Email string
 	Option
 }
 
 type VerifyAccountReply commonWithToken
 
 type SendMailRequest struct {
-	UserID string
-	Email  string
+	Email string
 }
