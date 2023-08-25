@@ -31,12 +31,12 @@ func (s service) UpsertStationDataStorage(ctx context.Context, req *models.Stati
 		return repositories.CreateStationDataStorageReply{}, err
 	}
 
-	byteStationData := []byte(jsonStationData)
-
 	reply := s.pg.Create(&station.DataStorage{
 		ID:      req.ID,
 		Type:    type_.Type_STATION,
-		Content: byteStationData,
+		Content: jsonStationData,
 	})
 	return repositories.CreateStationDataStorageReply{RowsAffected: reply.RowsAffected}, reply.Error
 }
+
+// func (s service) GetStation(ctx context.Context, id string)
