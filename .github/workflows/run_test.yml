@@ -1,0 +1,36 @@
+name: workflow for testing 
+
+on: 
+  push:
+  pull_request:
+    types:
+      - synchronize
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    container:
+      image: golang:latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: get requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y swagger
+          cd server
+          go mod download
+
+      - name: generate swagger
+        run: |
+          swagger generate server --target swagger --name data-flow-sync --spec ../swagger.yml --principal models.Principal
+
+          
+      - name: run
+        run: |
+          go vet ./...
+          go test -count=1 -gcflags=-l --coverprofile .testCoverage.txt ./...
+          go tool cover -func .testCoverage.txt
