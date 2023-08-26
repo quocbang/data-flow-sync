@@ -43,15 +43,16 @@ func (s service) GetAccount(ctx context.Context, Identifier string) (models.Acco
 	err := s.pg.Where(`user_id=?`, Identifier).Take(&user).Error
 	if err != nil {
 		err = s.pg.Where(`email=?`, Identifier).Take(&user).Error
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.Account{}, e.Error{
-				Code:    e.Code_ACCOUNT_NOT_FOUND,
-				Details: "account not found",
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return models.Account{}, e.Error{
+					Code:    e.Code_ACCOUNT_NOT_FOUND,
+					Details: "account not found",
+				}
 			}
+			return models.Account{}, err
 		}
-		return models.Account{}, err
 	}
-
 	return user, nil
 }
 

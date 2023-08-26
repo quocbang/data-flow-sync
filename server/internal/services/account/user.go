@@ -93,7 +93,7 @@ func (a Authorization) SignUp(params account.SignupParams) middleware.Responder 
 			Password: params.Signup.Password,
 		},
 		Option: repositories.Option{
-			TokenLifeTime: 5 * time.Minute,
+			TokenLifeTime: a.tokenLifeTime,
 		},
 	}
 	ctx := context.Background()
@@ -116,7 +116,7 @@ func (a Authorization) VerifyAccount(params account.VerifyAccountParams, princip
 		Otp:   params.AccountVerify.Otp,
 		Email: principal.Email,
 		Option: repositories.Option{
-			TokenLifeTime: 5 * time.Minute,
+			TokenLifeTime: a.tokenLifeTime,
 		},
 	}
 
@@ -133,7 +133,7 @@ func (a Authorization) VerifyAccount(params account.VerifyAccountParams, princip
 func (a Authorization) SendMail(params account.SendMailParams, principal *models.Principal) middleware.Responder {
 	ctx := context.Background()
 	if !principal.IsUnspecifiedUser {
-		return utils.ParseError(ctx, account.NewVerifyAccountDefault(http.StatusBadRequest), fmt.Errorf("user been verified"))
+		return utils.ParseError(ctx, account.NewSendMailDefault(http.StatusBadRequest), fmt.Errorf("user been verified"))
 	}
 
 	sendMailRequest := repositories.SendMailRequest{

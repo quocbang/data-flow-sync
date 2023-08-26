@@ -5,15 +5,15 @@ import (
 
 	s "github.com/stretchr/testify/suite"
 
-	"github.com/quocbang/data-flow-sync/server/internal/servicestest/internal/suite"
+	suiteutils "github.com/quocbang/data-flow-sync/server/internal/servicestest/internal/suite"
 )
 
 type Suite struct {
-	suite.BasicSuite
+	suiteutils.BasicSuite
 }
 
 func NewSuite() *Suite {
-	s := suite.NewSuite()
+	s := suiteutils.NewSuite()
 	return &Suite{BasicSuite: *s}
 }
 

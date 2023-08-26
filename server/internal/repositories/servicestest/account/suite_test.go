@@ -17,7 +17,7 @@ func NewSuite() *Suite {
 	s := servicestest.NewSuiteConfig(servicestest.SuiteParameters{
 		RelativeModels: []models.Models{&models.Account{}},
 		ClearData:      true,
-		WithTimeStub:   true,
+		WithTimeStub:   false,
 	})
 
 	return &Suite{

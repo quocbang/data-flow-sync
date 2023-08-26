@@ -1,7 +1,8 @@
-package suite
+package suiteutils
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -58,4 +59,22 @@ func init() {
 // httpTestRequest is define http test request.
 func httpTestRequest(method string, target string, body io.Reader) *http.Request {
 	return httptest.NewRequest(method, target, body)
+}
+
+func NewHttpResponseWriter() *httptest.ResponseRecorder {
+	return httptest.NewRecorder()
+}
+
+func MyProducer(w io.Writer, data interface{}) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(jsonData)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
