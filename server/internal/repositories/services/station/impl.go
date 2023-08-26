@@ -2,10 +2,11 @@ package station
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v9"
 	"gorm.io/gorm"
+	"sigs.k8s.io/yaml"
 
 	type_ "github.com/quocbang/data-flow-sync/server/assets/protobuf/types"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
@@ -25,16 +26,23 @@ func NewService(pg *gorm.DB, redis *redis.Client) repositories.StationServices {
 	}
 }
 
-func (s service) UpsertStationDataStorage(ctx context.Context, req *models.Station) (repositories.CreateStationDataStorageReply, error) {
-	jsonStationData, err := json.Marshal(req)
+func (s service) UpsertStationDataStorage(ctx context.Context, req *models.CreateStationDataStorage) (repositories.CreateStationDataStorageReply, error) {
+	errorMessage := ""
+	data, err := yaml.YAMLToJSON([]byte(req.Content))
 	if err != nil {
-		return repositories.CreateStationDataStorageReply{}, err
+		errorMessage += fmt.Sprintf("%s station is not a valid YAML: %v\n", req.ID, err)
+	}
+
+	if errorMessage != "" {
+		return repositories.CreateStationDataStorageReply{}, fmt.Errorf(errorMessage)
 	}
 
 	reply := s.pg.Create(&station.DataStorage{
-		ID:      req.ID,
-		Type:    type_.Type_STATION,
-		Content: jsonStationData,
+		ID:        req.ID,
+		Type:      type_.Type_STATION,
+		Content:   data,
+		CreatedBy: "tester_AI",
+		CreatedAt: 454545,
 	})
 	return repositories.CreateStationDataStorageReply{RowsAffected: reply.RowsAffected}, reply.Error
 }

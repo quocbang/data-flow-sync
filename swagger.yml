@@ -261,7 +261,23 @@ paths:
                 type: array
                 items:
                   $ref: "#/definitions/MergeRequest"
-
+  /station/sync:
+    post:
+      summary: create station data storage
+      operationId: CreateStationDataStorage
+      tags:
+        - "station"
+      responses:
+        200:
+          description: A successful response.
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema: 
+            $ref: "#/definitions/CreateStationDataStorage"
+  
+        
   # material-resource zone
 
   # substitution zone
@@ -352,6 +368,15 @@ definitions:
         items:
           type: string
         description: devices
+  
+  CreateStationDataStorage:
+    type: object
+    properties:
+      id:
+        type: string
+      content:
+        type: string
+        description: the content MUST be in YAML format.
 
   MergeRequest:
     type: object

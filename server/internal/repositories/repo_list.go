@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
+	model "github.com/quocbang/data-flow-sync/server/swagger/models"
 )
 
 type Services interface {
@@ -13,6 +14,7 @@ type Services interface {
 }
 
 type StationServices interface {
+	UpsertStationDataStorage(context.Context, *model.CreateStationDataStorage) (CreateStationDataStorageReply, error)
 }
 
 type StationGroupServices interface {
