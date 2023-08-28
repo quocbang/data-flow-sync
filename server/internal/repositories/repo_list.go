@@ -3,7 +3,10 @@ package repositories
 import (
 	"context"
 
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
+	mod "github.com/quocbang/data-flow-sync/server/swagger/models"
+	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/station"
 )
 
 type Services interface {
@@ -13,6 +16,7 @@ type Services interface {
 }
 
 type StationServices interface {
+	UpsertStationDataStorage(params station.CreateStationDataStorageParams, principal *mod.Principal) middleware.Responder
 }
 
 type StationGroupServices interface {

@@ -19,6 +19,7 @@ func RegisterService(account AccountServices) *Services {
 }
 
 type StationServices interface {
+	CreateStationDataStorage()
 }
 
 type StationGroupServices interface {
