@@ -270,6 +270,17 @@ paths:
       responses:
         200:
           description: A successful response.
+        default:
+          description: Unexpected error
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                x-omitempty: false
+              details:
+                type: string
+                x-omitempty: false
       parameters:
         - name: body
           in: body
