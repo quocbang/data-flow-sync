@@ -19,7 +19,7 @@ import Settings from '../../../../config/defaultSettings';
 import React, { useState } from 'react';
 import { flushSync } from 'react-dom';
 import { decodeToken } from '..';
-import { setToken } from '@/utils/Cookies';
+import { setToken } from '@/utils/cookies';
 
 const Lang = () => {
   const langClassName = useEmotionCss(({ token }) => {

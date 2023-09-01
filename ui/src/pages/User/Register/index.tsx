@@ -9,7 +9,7 @@ import Password from 'antd/es/input/Password';
 import { registerAccount } from '@/services/api/api';
 import { decodeToken } from '..';
 import { flushSync } from 'react-dom';
-import { setToken } from '@/utils/Cookies';
+import { setToken } from '@/utils/cookies';
 import { MailOutlined, UserOutlined, LockOutlined  } from '@ant-design/icons';
 import { checkIsEmailExisted, checkIsUserExisted } from '@/services/graphql/api/api';
 
@@ -68,6 +68,7 @@ const Register: React.FC = () => {
     }
   }
   const isNicknameExisted = async (userID: string): Promise<boolean> => {
+    return false
     if (userID == "") {
       return false
     }
@@ -78,6 +79,7 @@ const Register: React.FC = () => {
     return false
   }
   const isEmailExisted = async (email: string): Promise<boolean> => {
+    return false
     if (email === "") {
       return false
     }

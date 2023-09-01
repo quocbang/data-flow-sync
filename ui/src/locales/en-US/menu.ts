@@ -50,5 +50,6 @@ export default {
   'menu.editor.mind': 'Mind Editor',
   'menu.editor.koni': 'Koni Editor',
   'menu.limitaryHour': 'Limitary Hour',
-  'menu.tasks': 'Tasks'
+  'menu.tasks': 'Tasks',
+  'menu.station': "Station"
 };

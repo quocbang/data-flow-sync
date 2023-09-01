@@ -51,4 +51,10 @@ export default [
     path: 'tasks',
     component: './TaskList',    
   },
+  {
+    name: 'station',
+    icon: 'smile',
+    path: '/list/station',
+    component: './Station',
+  }
 ];

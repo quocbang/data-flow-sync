@@ -1,7 +1,7 @@
 ﻿import type { RequestOptions } from '@@/plugin-request/request';
 import type { RequestConfig } from '@umijs/max';
 import { message, notification } from 'antd';
-import { getToken } from './utils/Cookies';
+import { getToken } from './utils/cookies';
 import { history } from '@umijs/max';
 
 // Error handling scheme: error type

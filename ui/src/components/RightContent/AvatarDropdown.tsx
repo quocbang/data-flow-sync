@@ -8,7 +8,7 @@ import type { MenuInfo } from 'rc-menu/lib/interface';
 import React, { useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import HeaderDropdown from '../HeaderDropdown';
-import { removeToken } from '@/utils/Cookies';
+import { removeToken } from '@/utils/cookies';
 
 export type GlobalHeaderRightProps = {
   menu?: boolean;

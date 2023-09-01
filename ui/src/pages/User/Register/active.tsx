@@ -5,7 +5,7 @@ import { GetCode, verifyAccount } from "@/services/api/api";
 import { decodeToken } from "..";
 import { useModel, useIntl } from "@umijs/max";
 import { flushSync } from "react-dom";
-import { setToken } from "@/utils/Cookies";
+import { setToken } from "@/utils/cookies";
 import { ProFormCaptcha } from "@ant-design/pro-components";
 
 export declare type ActiveOptions = {
@@ -105,7 +105,7 @@ const CheckAndActiveUser: React.FC<ActiveOptions> = (data) => {
               });
             }}
             name="code"              
-            onChange={(e: any) => handleSetCode(e.target.value)}
+            onChange={(e: any) => handleSetCode(e.target.value)}            
             rules={[
               {
                 required: true,
@@ -115,7 +115,7 @@ const CheckAndActiveUser: React.FC<ActiveOptions> = (data) => {
                 len: 6,
                 message: 'Verify code are 6 characters'
               }                
-            ]}
+            ]}                        
           >
           </ProFormCaptcha>
         </Modal>           

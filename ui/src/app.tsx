@@ -10,7 +10,7 @@ import jwtDecode from 'jwt-decode'
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 const registerPath = '/user/register'
-import { getToken } from './utils/Cookies';
+import { getToken } from './utils/cookies';
 import CheckAndActiveUser from './pages/User/Register/active';
 import MergeRequest from './pages/MergeRequest';
 
