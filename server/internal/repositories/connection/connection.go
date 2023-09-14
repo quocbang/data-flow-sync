@@ -101,7 +101,9 @@ func New(db Database, opts ...Options) (repositories.Repositories, error) {
 		return nil, err
 	}
 	if o.IsMigrate {
-		database.maybeMigrate()
+		if err := database.maybeMigrate(); err != nil {
+			return nil, err
+		}
 	}
 
 	return database, nil

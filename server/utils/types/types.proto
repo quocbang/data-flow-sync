@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package types;
+option go_package = "github.com/quocbang/data-sync-flow/server/utils/types";
+
+enum types {
+  UNSPECIFIED = 0;
+  LIMITARY_HOUR = 1;
+  STATION = 2;
+  STATION_GROUP = 3;
+  SUBSTITUTION = 4;
+  MATERIAL_RESOURCE = 5;
+}
