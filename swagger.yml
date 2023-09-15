@@ -261,6 +261,79 @@ paths:
                   $ref: "#/definitions/MergeRequest"
 
   # station zone
+  /station/merge-request:
+    post:
+      summary: create station merge request
+      operationId: CreateStationMergeRequest      
+      tags:
+        - "station"
+      security:
+        - api_key: []    
+      parameters:     
+        - in: body
+          name: body
+          required: true
+          description: request with array string that contain file format
+          schema:
+            type: object
+            properties:
+              files: 
+                type: array          
+                items:
+                  type: string                  
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              mergeRequestID:
+                type: integer                              
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        default:
+          $ref: "#/responses/Default"
+  /station/merge-request/{ID}:
+    get:
+      summary: get station merge request
+      operationId: GetStationMergeRequest
+      tags:
+        - "station"
+      security:
+        - api_key: []
+      parameters:
+        - in: path
+          name: ID
+          type: integer
+          required: true
+          description: merge request ID
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              data: 
+                type: array                
+                items:
+                  $ref: "#/definitions/StationMergeRequest"
+                    
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        default:
+          $ref: "#/responses/Default"
 
   # material-resource zone
 
@@ -352,3 +425,41 @@ definitions:
       CreateBy:
         type: string
         description: merge request owner
+  
+  Station:
+    type: object
+    properties:
+      ID:
+        type: string
+      subCompany:
+        type: integer
+      factory:
+        type: string
+      departmentID:
+        type: string
+      alias:
+        type: string
+      serialNumber:
+        type: integer
+      description:
+        type: string
+      devices:
+        type: array
+        items:
+          type: integer
+
+  StationMergeRequest:    
+    type: object      
+    properties:    
+      file:
+        $ref: "#/definitions/Station"
+      added:                
+        type: array
+        x-omitempty: true
+        items:
+          $ref: "#/definitions/Station"
+      deleted:
+        type: array
+        x-omitempty: true
+        items:
+          $ref: "#/definitions/Station"
