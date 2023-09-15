@@ -13,6 +13,8 @@ type Services interface {
 }
 
 type StationServices interface {
+	CreateMergeRequest(context.Context) (CreateStationMRReply, error)
+	GetMergeRequest(context.Context, GetMRRequest) (GetMRReply, error)
 }
 
 type StationGroupServices interface {

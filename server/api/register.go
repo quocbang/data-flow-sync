@@ -8,8 +8,10 @@ import (
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	"github.com/quocbang/data-flow-sync/server/internal/services"
 	a "github.com/quocbang/data-flow-sync/server/internal/services/account"
+	stationService "github.com/quocbang/data-flow-sync/server/internal/services/station"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
+	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/station"
 	"github.com/quocbang/data-flow-sync/server/utils/roles"
 )
 
@@ -25,6 +27,7 @@ type ServiceConfig struct {
 func NewHandleService(s ServiceConfig) *services.Services {
 	return services.RegisterService(
 		a.NewAuthorization(s.Repo, s.TokenLifeTime, roles.HasPermission, s.Smtp, s.Redis, s.SecretKey),
+		stationService.NewStation(s.Repo, s.MRExpiryTime, roles.HasPermission),
 	)
 }
 
@@ -42,7 +45,8 @@ func RegisterAPI(api *operations.DataFlowSyncAPI, serviceConfig ServiceConfig) {
 	// limitary-hour
 
 	// station
+	api.StationCreateStationMergeRequestHandler = station.CreateStationMergeRequestHandlerFunc(s.Station.CreateStationMergeRequest)
+	api.StationGetStationMergeRequestHandler = station.GetStationMergeRequestHandlerFunc(s.Station.GetStationMergeRequest)
 
 	// station group
-
 }
