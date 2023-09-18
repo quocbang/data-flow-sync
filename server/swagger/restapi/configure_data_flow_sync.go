@@ -81,13 +81,21 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 
 	api.JSONProducer = runtime.JSONProducer()
 
+	// connect to database server and its auxiliary
 	repo, err := server.RegisterRepository(configurations.Database)
 	if err != nil {
 		log.Fatalf("failed to register repository, error: %v", err)
 	}
 
+	// connect to smtp server
+	smtp, err := server.RegisterSmtp(configurations.Smtp)
+	if err != nil {
+		log.Fatalf("failed to register mail server, error: %v", err)
+	}
+
 	serviceConfig := apiService.ServiceConfig{
 		Repo:          repo,
+		Smtp:          smtp,
 		TokenLifeTime: time.Duration(configurations.TokenLifeTime),
 		MRExpiryTime:  configurations.MRExpiryTime,
 	}

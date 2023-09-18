@@ -25,7 +25,8 @@ type AccountServices interface {
 	SignOut(context.Context, string) error
 	SignUp(context.Context, SignUpAccountRequest) (SignInReply, error)
 	VerifyAccount(context.Context, VerifyAccountRequest) (VerifyAccountReply, error)
-	SendMail(context.Context, SendMailRequest) error
 	UpdateToUserRole(context.Context, string) (CommonUpdateAndDeleteReply, error)
 	Authorization(context.Context, string) (*models.JwtCustomClaims, error)
+	AddOTP(context.Context, string, string) error
+	DelOTP(context.Context, string) error
 }

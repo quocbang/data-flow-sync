@@ -3,6 +3,7 @@ package api
 import (
 	"time"
 
+	"github.com/quocbang/data-flow-sync/server/internal/mailserver"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	"github.com/quocbang/data-flow-sync/server/internal/services"
 	a "github.com/quocbang/data-flow-sync/server/internal/services/account"
@@ -13,13 +14,14 @@ import (
 
 type ServiceConfig struct {
 	Repo          repositories.Repositories
+	Smtp          mailserver.MailServer
 	TokenLifeTime time.Duration
 	MRExpiryTime  int64
 }
 
 func NewHandleService(s ServiceConfig) *services.Services {
 	return services.RegisterService(
-		a.NewAuthorization(s.Repo, s.TokenLifeTime, roles.HasPermission),
+		a.NewAuthorization(s.Repo, s.TokenLifeTime, roles.HasPermission, s.Smtp),
 	)
 }
 

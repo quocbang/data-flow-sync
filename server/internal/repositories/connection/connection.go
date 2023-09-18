@@ -19,7 +19,7 @@ import (
 type DB struct {
 	Postgres *gorm.DB
 	Redis    *redis.Client
-	SMTP     *smtp.Client
+	TxFlag   bool
 }
 
 type options struct {
@@ -93,15 +93,9 @@ func NewRepository(db Database) (*DB, error) {
 		return nil, err
 	}
 
-	smtp, err := NewSMTPConnection(db.SMTP)
-	if err != nil {
-		return nil, err
-	}
-
 	return &DB{
 		Postgres: pg,
 		Redis:    redis,
-		SMTP:     smtp,
 	}, nil
 }
 

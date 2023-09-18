@@ -5,7 +5,6 @@ import (
 
 	"github.com/quocbang/data-flow-sync/server/api"
 	"github.com/quocbang/data-flow-sync/server/internal/mocks"
-	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	"github.com/quocbang/data-flow-sync/server/internal/services"
 	"github.com/stretchr/testify/mock"
 )
@@ -19,20 +18,47 @@ func NewMockRepositories() *mocks.Repositories {
 	return &mocks.Repositories{}
 }
 
-// NewMockServer initialize mock server.
-func NewMockServer(m *mock.Mock, opts MockServerOptions) services.Services {
-	return *api.NewHandleService(api.ServiceConfig{
-		Repo:          newMockRepositories(m),
-		TokenLifeTime: opts.TokenLifeTime,
-		MRExpiryTime:  opts.MRExpiryTime,
-	})
+func NewMockMailServer() *mocks.MailServer {
+	return &mocks.MailServer{}
 }
 
-func newMockRepositories(m *mock.Mock) repositories.Repositories {
-	return &mocks.Repositories{
-		Mock: mock.Mock{
-			Calls:         m.Calls,
-			ExpectedCalls: m.ExpectedCalls,
-		},
+type Option func(*api.ServiceConfig)
+
+// NewMockServer initialize mock server.
+func NewMockServer(opts ...Option) services.Services {
+	var config = api.ServiceConfig{}
+
+	for _, opt := range opts {
+		opt(&config)
+	}
+	return *api.NewHandleService(config)
+}
+
+func WithMockRepositories(m *mock.Mock) Option {
+	return func(sc *api.ServiceConfig) {
+		sc.Repo = &mocks.Repositories{
+			Mock: mock.Mock{
+				Calls:         m.Calls,
+				ExpectedCalls: m.ExpectedCalls,
+			},
+		}
+	}
+}
+
+func WithMockMailServer(m *mock.Mock) Option {
+	return func(sc *api.ServiceConfig) {
+		sc.Smtp = &mocks.MailServer{
+			Mock: mock.Mock{
+				Calls:         m.Calls,
+				ExpectedCalls: m.ExpectedCalls,
+			},
+		}
+	}
+}
+
+func WithRequirementOptions(m MockServerOptions) Option {
+	return func(sc *api.ServiceConfig) {
+		sc.MRExpiryTime = m.MRExpiryTime
+		sc.TokenLifeTime = m.TokenLifeTime
 	}
 }

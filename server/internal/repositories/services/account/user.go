@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/smtp"
 	"os"
 	"time"
@@ -17,7 +16,6 @@ import (
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	e "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
-	"github.com/quocbang/data-flow-sync/server/utils/mail"
 	"github.com/quocbang/data-flow-sync/server/utils/roles"
 )
 
@@ -29,11 +27,10 @@ type service struct {
 	smtp *smtp.Client
 }
 
-func NewService(pg *gorm.DB, rd *redis.Client, sm *smtp.Client) repositories.AccountServices {
+func NewService(pg *gorm.DB, rd *redis.Client) repositories.AccountServices {
 	return service{
-		pg:   pg,
-		rd:   rd,
-		smtp: sm,
+		pg: pg,
+		rd: rd,
 	}
 }
 
@@ -182,12 +179,6 @@ func (s service) SignUp(ctx context.Context, req repositories.SignUpAccountReque
 		return repositories.SignInReply{}, err
 	}
 
-	if err := s.SendMail(ctx, repositories.SendMailRequest{
-		Email: req.Email,
-	}); err != nil {
-		return repositories.SignInReply{}, err
-	}
-
 	return repositories.SignInReply{Token: reply.Token}, nil
 }
 
@@ -227,64 +218,4 @@ func (s service) VerifyAccount(ctx context.Context, req repositories.VerifyAccou
 	}
 
 	return repositories.VerifyAccountReply{Token: token}, nil
-}
-
-func OptCreator() string {
-	// Initialize the random number generator
-	rand.Seed(time.Now().UnixNano())
-
-	// Generate a random 6-digit number
-	randOTP := rand.Intn(999999)
-
-	stringOTP := fmt.Sprintf("%v", randOTP)
-
-	for i := 0; i < 6-len(stringOTP); i++ {
-		stringOTP = "0" + stringOTP
-	}
-
-	return stringOTP
-}
-
-func (s service) SendMail(ctx context.Context, req repositories.SendMailRequest) error {
-	// Set the sender
-	if err := s.smtp.Mail(mail.GetOtpMailSender()); err != nil {
-		return err
-	}
-
-	if err := s.smtp.Rcpt(req.Email); err != nil {
-		return err
-	}
-
-	// generate otp
-	otp := OptCreator()
-
-	// Compose the HTML email message
-	// html active form
-	message := "To: " + req.Email + "\n" +
-		"Subject: OTP verifier\n" +
-		"MIME-Version: 1.0\n" +
-		"Content-Type: text/html; charset=\"utf-8\"\n" +
-		"\n" +
-		"<html><body><div class='active-form' style='display: flex; justify-content: center'>" +
-		"<div style='background-color: rgba(228, 241, 254, 1); height: 600px; width: 600px;text-align: center; font-size: large'>" +
-		"<h1>Data Flow Sync active mail</h1><p>you just registered an account at data flow sync, here is verify code:</p><h1>" + otp + "</h1>" +
-		"<p><strong>*Note:</strong> this code will be available within two minute </p></div></div></body></html>"
-
-	wc, err := s.smtp.Data()
-	if err != nil {
-		return err
-	}
-	defer wc.Close()
-
-	_, err = fmt.Fprintf(wc, message)
-	if err != nil {
-		return err
-	}
-
-	// Add otp to redis server with 5 minutes expire time
-	if err := s.addOTP(ctx, req.Email, otp); err != nil {
-		return err
-	}
-
-	return nil
 }

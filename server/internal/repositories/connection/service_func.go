@@ -1,7 +1,12 @@
 package connection
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
+
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/account"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/station"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/stationgroup"
@@ -26,11 +31,6 @@ func (s *DB) Close() error {
 		return err
 	}
 
-	// close smtp
-	if err := s.SMTP.Close(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -39,5 +39,32 @@ func (s *DB) StationGroup() repositories.StationGroupServices {
 }
 
 func (s *DB) Account() repositories.AccountServices {
-	return account.NewService(s.Postgres, s.Redis, s.SMTP)
+	return account.NewService(s.Postgres, s.Redis)
+}
+
+func (d *DB) Begin(ctx context.Context, opts ...*sql.TxOptions) (repositories.Repositories, error) {
+	if d.TxFlag {
+		return d, errors.Error{Code: errors.Code_ALREADY_IN_TRANSACTION}
+	}
+
+	newHandlerPtr := &DB{
+		Postgres: d.Postgres.Begin(opts...),
+		Redis:    d.Redis,
+		TxFlag:   true,
+	}
+	return newHandlerPtr, nil
+}
+
+func (d *DB) Commit() error {
+	if !d.TxFlag {
+		return fmt.Errorf("not in transaction")
+	}
+	return d.Postgres.Commit().Error
+}
+
+func (d *DB) RollBack() error {
+	if !d.TxFlag {
+		return fmt.Errorf("not in transaction")
+	}
+	return d.Postgres.Rollback().Error
 }

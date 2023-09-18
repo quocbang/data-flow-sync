@@ -1,6 +1,7 @@
 package account
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/quocbang/data-flow-sync/server/internal/mailserver"
 	"github.com/quocbang/data-flow-sync/server/internal/mocks"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	repoErrors "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
@@ -50,7 +52,7 @@ func (s *Suite) TestLogin() {
 				return &account
 			}(),
 		}
-		mockServer := s.NewMockServer(&goodMockRepo.Mock, setupmock.MockServerOptions{}) // return mock Repositories struct for API service interface
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&goodMockRepo.Mock)) // return mock Repositories struct for API service interface
 
 		// Act
 		response := mockServer.Account.Login(goodParams).(*account.LoginOK)
@@ -80,7 +82,7 @@ func (s *Suite) TestLogin() {
 				return &account
 			}(),
 		}
-		mockServer := s.NewMockServer(&badMockRepo.Mock, setupmock.MockServerOptions{})
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&badMockRepo.Mock))
 
 		// Act
 		response := mockServer.Account.Login(wrongPasswordParams).(*account.LoginDefault)
@@ -114,7 +116,7 @@ func (s *Suite) TestLogOut() {
 				return &account
 			}(),
 		}
-		mockServer := s.NewMockServer(&mockRepo.Mock, setupmock.MockServerOptions{})
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
 
 		// Act
 		response := mockServer.Account.Logout(goodParams, nil)
@@ -146,7 +148,7 @@ func (s *Suite) TestAuth() {
 				return &account
 			}(),
 		}
-		mockServer := s.NewMockServer(&mockRepo.Mock, setupmock.MockServerOptions{})
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
 
 		// Act
 		principal, err := mockServer.Account.Auth(token)
@@ -175,7 +177,7 @@ func (s *Suite) TestAuth() {
 				return &account
 			}(),
 		}
-		mockServer := s.NewMockServer(&mockRepo.Mock, setupmock.MockServerOptions{})
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
 
 		// Act
 		_, err := mockServer.Account.Auth(token)
@@ -201,20 +203,23 @@ func (s *Suite) TestSendMail() {
 
 	{ // good case
 		// Arrange
-		mockrepo := s.MockRepository()
-		mockrepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+		mockMailServer := s.MockMailServer()
+		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+			Recipient: "james@gmail.com",
+		}).ReturnArguments = mock.Arguments{"111111", nil}
+
+		mockRepo := s.MockRepository()
+		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
 			func() repositories.AccountServices {
-				acct := mocks.AccountServices{}
-				acct.EXPECT().SendMail(s.Context, repositories.SendMailRequest{
-					Email: testEmail,
-				}).ReturnArguments = mock.Arguments{
-					nil,
-				}
-				return &acct
+				acc := mocks.AccountServices{}
+				acc.EXPECT().AddOTP(s.Context, "james@gmail.com", "111111").ReturnArguments =
+					mock.Arguments{nil}
+
+				return &acc
 			}(),
 		}
 
-		mockServer := s.NewMockServer(&mockrepo.Mock, setupmock.MockServerOptions{})
+		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock), setupmock.WithMockRepositories(&mockRepo.Mock))
 
 		// Act
 		response := mockServer.Account.SendMail(params(), &models.Principal{
@@ -231,23 +236,15 @@ func (s *Suite) TestSendMail() {
 	// bad cases
 	{ // internal fail
 		// Arrange
-		mockrepo := s.MockRepository()
-		mockrepo.EXPECT().Account().ReturnArguments = mock.Arguments{
-			func() repositories.AccountServices {
-				acct := mocks.AccountServices{}
-				acct.EXPECT().SendMail(s.Context, repositories.SendMailRequest{
-					Email: testEmail,
-				}).ReturnArguments = mock.Arguments{
-					repoErrors.Error{
-						Code:    0,
-						Details: "internal error",
-					},
-				}
-				return &acct
-			}(),
-		}
+		mockMailServer := s.MockMailServer()
+		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+			Recipient: "james@gmail.com",
+		}).ReturnArguments = mock.Arguments{"", repoErrors.Error{
+			Code:    0,
+			Details: "internal error",
+		}}
 
-		mockServer := s.NewMockServer(&mockrepo.Mock, setupmock.MockServerOptions{})
+		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock))
 
 		// Act
 		response := mockServer.Account.SendMail(params(), &models.Principal{
@@ -267,23 +264,15 @@ func (s *Suite) TestSendMail() {
 	}
 	{ // identified user
 		// Arrange
-		mockrepo := s.MockRepository()
-		mockrepo.EXPECT().Account().ReturnArguments = mock.Arguments{
-			func() repositories.AccountServices {
-				acct := mocks.AccountServices{}
-				acct.EXPECT().SendMail(s.Context, repositories.SendMailRequest{
-					Email: testEmail,
-				}).ReturnArguments = mock.Arguments{
-					repoErrors.Error{
-						Code:    0,
-						Details: "internal error",
-					},
-				}
-				return &acct
-			}(),
-		}
+		mockMailServer := s.MockMailServer()
+		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+			Recipient: "james@gmail.com",
+		}).ReturnArguments = mock.Arguments{"", repoErrors.Error{
+			Code:    0,
+			Details: "internal error",
+		}}
 
-		mockServer := s.NewMockServer(&mockrepo.Mock, setupmock.MockServerOptions{})
+		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock))
 
 		// Act
 		response := mockServer.Account.SendMail(params(), &models.Principal{
@@ -299,6 +288,47 @@ func (s *Suite) TestSendMail() {
 		response.WriteResponse(res, cusProducer)
 
 		expect := []byte(`{"details":"user been verified"}`)
+		assertions.Equal(string(expect), res.Body.String())
+	}
+	{ // failed to add to temporary storage
+		// Arrange
+		mockMailServer := s.MockMailServer()
+		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+			Recipient: "james@gmail.com",
+		}).ReturnArguments = mock.Arguments{"111111", nil}
+
+		mockRepo := s.MockRepository()
+		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+			func() repositories.AccountServices {
+				acc := mocks.AccountServices{}
+				acc.EXPECT().AddOTP(s.Context, "james@gmail.com", "111111").ReturnArguments =
+					mock.Arguments{
+						repoErrors.Error{
+							Code:    0,
+							Details: "redis error",
+						},
+					}
+
+				return &acc
+			}(),
+		}
+
+		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock), setupmock.WithMockRepositories(&mockRepo.Mock))
+
+		// Act
+		response := mockServer.Account.SendMail(params(), &models.Principal{
+			Email:             testEmail,
+			ID:                testUserID,
+			IsUnspecifiedUser: true,
+			Role:              0,
+		})
+
+		// Assert
+		res := suiteutils.NewHttpResponseWriter()
+		cusProducer := runtime.ProducerFunc(suiteutils.MyProducer)
+		response.WriteResponse(res, cusProducer)
+
+		expect := []byte(`{"details":"redis error"}`)
 		assertions.Equal(string(expect), res.Body.String())
 	}
 }
@@ -338,7 +368,7 @@ func (s *Suite) TestVerifyAccount() {
 			}(),
 		}
 
-		mockServer := s.NewMockServer(&mockRepo.Mock, setupmock.MockServerOptions{})
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
 
 		// Act
 		response := mockServer.Account.VerifyAccount(params(), &models.Principal{
@@ -377,7 +407,7 @@ func (s *Suite) TestVerifyAccount() {
 			}(),
 		}
 
-		mockServer := s.NewMockServer(&mockRepo.Mock, setupmock.MockServerOptions{})
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
 
 		// Act
 		response := mockServer.Account.VerifyAccount(params(), &models.Principal{
@@ -412,7 +442,7 @@ func (s *Suite) TestVerifyAccount() {
 			}(),
 		}
 
-		mockServer := s.NewMockServer(&mockRepo.Mock, setupmock.MockServerOptions{})
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
 
 		// Act
 		response := mockServer.Account.VerifyAccount(params(), &models.Principal{
@@ -451,8 +481,8 @@ func (s *Suite) TestSignUp() {
 
 	{ // good case
 		// Arrange
-		mockRepo := s.MockRepository()
-		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+		mockTxRepo := s.MockRepository()
+		mockTxRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
 			func() repositories.AccountServices {
 				acc := mocks.AccountServices{}
 				acc.EXPECT().SignUp(s.Context, repositories.SignUpAccountRequest{
@@ -466,12 +496,31 @@ func (s *Suite) TestSignUp() {
 						Token: testToken,
 					}, nil,
 				}
+				acc.EXPECT().AddOTP(s.Context, "james@gmail.com", "111111").ReturnArguments =
+					mock.Arguments{nil}
 
 				return &acc
 			}(),
 		}
+		mockTxRepo.EXPECT().Commit().ReturnArguments = mock.Arguments{
+			nil,
+		}
+		mockTxRepo.EXPECT().RollBack().ReturnArguments = mock.Arguments{
+			fmt.Errorf("not in transaction"),
+		}
 
-		mockServer := s.NewMockServer(&mockRepo.Mock, setupmock.MockServerOptions{})
+		mockRepo := s.MockRepository()
+		mockRepo.EXPECT().Begin(s.Context).ReturnArguments = mock.Arguments{
+			mockTxRepo,
+			nil,
+		}
+
+		mockMailServer := s.MockMailServer()
+		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+			Recipient: "james@gmail.com",
+		}).ReturnArguments = mock.Arguments{"111111", nil}
+
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock), setupmock.WithMockMailServer(&mockMailServer.Mock))
 
 		// Act
 		response := mockServer.Account.SignUp(params())
@@ -485,10 +534,10 @@ func (s *Suite) TestSignUp() {
 		assertions.Equal(string(expect), res.Body.String())
 	}
 	// bad cases
-	{ // internal error
+	{ // sign up failed
 		// Arrange
-		mockRepo := s.MockRepository()
-		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+		mockTxRepo := s.MockRepository()
+		mockTxRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
 			func() repositories.AccountServices {
 				acc := mocks.AccountServices{}
 				acc.EXPECT().SignUp(s.Context, repositories.SignUpAccountRequest{
@@ -503,12 +552,23 @@ func (s *Suite) TestSignUp() {
 						Details: "internal error",
 					},
 				}
+				acc.EXPECT().DelOTP(s.Context, "james@gmail.com").ReturnArguments =
+					mock.Arguments{nil}
 
 				return &acc
 			}(),
 		}
+		mockTxRepo.EXPECT().RollBack().ReturnArguments = mock.Arguments{
+			nil,
+		}
 
-		mockServer := s.NewMockServer(&mockRepo.Mock, setupmock.MockServerOptions{})
+		mockRepo := s.MockRepository()
+		mockRepo.EXPECT().Begin(s.Context).ReturnArguments = mock.Arguments{
+			mockTxRepo,
+			nil,
+		}
+
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
 
 		// Act
 		response := mockServer.Account.SignUp(params())
@@ -519,6 +579,118 @@ func (s *Suite) TestSignUp() {
 		response.WriteResponse(res, cusProducer)
 
 		expect := []byte(`{"details":"internal error"}`)
+		assertions.Equal(string(expect), res.Body.String())
+	}
+	{ // send mail failed
+		// Arrange
+		mockTxRepo := s.MockRepository()
+		mockTxRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+			func() repositories.AccountServices {
+				acc := mocks.AccountServices{}
+				acc.EXPECT().SignUp(s.Context, repositories.SignUpAccountRequest{
+					CreateAccountRequest: repositories.CreateAccountRequest{
+						UserID:   testUserID,
+						Email:    testEmail,
+						Password: testPassword,
+					},
+				}).ReturnArguments = mock.Arguments{
+					repositories.SignInReply{
+						Token: testToken,
+					}, nil,
+				}
+				acc.EXPECT().DelOTP(s.Context, "james@gmail.com").ReturnArguments =
+					mock.Arguments{nil}
+
+				return &acc
+			}(),
+		}
+		mockTxRepo.EXPECT().RollBack().ReturnArguments = mock.Arguments{
+			nil,
+		}
+
+		mockMailServer := s.MockMailServer()
+		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+			Recipient: "james@gmail.com",
+		}).ReturnArguments = mock.Arguments{"", repoErrors.Error{
+			Code:    0,
+			Details: "send mail verification failed",
+		}}
+
+		mockRepo := s.MockRepository()
+		mockRepo.EXPECT().Begin(s.Context).ReturnArguments = mock.Arguments{
+			mockTxRepo,
+			nil,
+		}
+
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock), setupmock.WithMockMailServer(&mockMailServer.Mock))
+
+		// Act
+		response := mockServer.Account.SignUp(params())
+
+		// Assert
+		res := suiteutils.NewHttpResponseWriter()
+		cusProducer := runtime.ProducerFunc(suiteutils.MyProducer)
+		response.WriteResponse(res, cusProducer)
+
+		expect := []byte(`{"details":"send mail verification failed"}`)
+		assertions.Equal(string(expect), res.Body.String())
+	}
+	{ // add otp to redis failed
+		// Arrange
+		mockTxRepo := s.MockRepository()
+		mockTxRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+			func() repositories.AccountServices {
+				acc := mocks.AccountServices{}
+				acc.EXPECT().SignUp(s.Context, repositories.SignUpAccountRequest{
+					CreateAccountRequest: repositories.CreateAccountRequest{
+						UserID:   testUserID,
+						Email:    testEmail,
+						Password: testPassword,
+					},
+				}).ReturnArguments = mock.Arguments{
+					repositories.SignInReply{
+						Token: testToken,
+					}, nil,
+				}
+				acc.EXPECT().AddOTP(s.Context, "james@gmail.com", "111111").ReturnArguments =
+					mock.Arguments{
+						repoErrors.Error{
+							Code:    0,
+							Details: "failed to save otp",
+						},
+					}
+				acc.EXPECT().DelOTP(s.Context, "james@gmail.com").ReturnArguments =
+					mock.Arguments{nil}
+
+				return &acc
+			}(),
+		}
+		mockTxRepo.EXPECT().RollBack().ReturnArguments = mock.Arguments{
+			nil,
+		}
+
+		mockRepo := s.MockRepository()
+		mockRepo.EXPECT().Begin(s.Context).ReturnArguments = mock.Arguments{
+			mockTxRepo,
+			nil,
+		}
+
+		mockMailServer := s.MockMailServer()
+		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+			Recipient: "james@gmail.com",
+		}).ReturnArguments = mock.Arguments{"111111", nil}
+
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock), setupmock.WithMockMailServer(&mockMailServer.Mock))
+
+		// Act
+		response := mockServer.Account.SignUp(params())
+
+		// Assert
+		res := suiteutils.NewHttpResponseWriter()
+		cusProducer := runtime.ProducerFunc(suiteutils.MyProducer)
+		response.WriteResponse(res, cusProducer)
+
+		expect := []byte(`{"details":"failed to save otp"}`)
 		assertions.Equal(string(expect), res.Body.String())
 	}
 }

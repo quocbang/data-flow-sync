@@ -9,6 +9,7 @@ import (
 	apiErrors "github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime/middleware"
 
+	"github.com/quocbang/data-flow-sync/server/internal/mailserver"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	repoErrors "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	s "github.com/quocbang/data-flow-sync/server/internal/services"
@@ -22,6 +23,7 @@ import (
 const AuthorizationKey string = "x-data-flow-sync-auth-key"
 
 type Authorization struct {
+	smtp          mailserver.MailServer
 	repo          repositories.Repositories
 	tokenLifeTime time.Duration
 	hasPermission func(function.FuncName, roles.Roles) bool
@@ -30,8 +32,10 @@ type Authorization struct {
 func NewAuthorization(repo repositories.Repositories,
 	tokenLifeTime time.Duration,
 	hasPermission func(function.FuncName, roles.Roles) bool,
+	smtp mailserver.MailServer,
 ) s.AccountServices {
 	return Authorization{
+		smtp:          smtp,
 		repo:          repo,
 		tokenLifeTime: tokenLifeTime,
 		hasPermission: hasPermission,
@@ -98,10 +102,41 @@ func (a Authorization) SignUp(params account.SignupParams) middleware.Responder 
 	}
 	ctx := context.Background()
 
-	reply, err := a.repo.Account().SignUp(ctx, signUpRequest)
+	tx, err := a.repo.Begin(ctx)
 	if err != nil {
 		return utils.ParseError(ctx, account.NewSignupDefault(http.StatusInternalServerError), err)
 	}
+	good := false
+
+	defer func() {
+		tx.RollBack()
+		if !good {
+			tx.Account().DelOTP(ctx, params.Signup.Email)
+		}
+	}()
+
+	// add new account
+	reply, err := tx.Account().SignUp(ctx, signUpRequest)
+	if err != nil {
+		return utils.ParseError(ctx, account.NewSignupDefault(http.StatusInternalServerError), err)
+	}
+
+	// send verify mail
+	otp, err := a.smtp.SendAccountVerification(ctx, mailserver.MailVerifyRequest{Recipient: params.Signup.Email})
+	if err != nil {
+		return utils.ParseError(ctx, account.NewSignupDefault(http.StatusInternalServerError), err)
+	}
+
+	// add otp to temporary storage
+	err = tx.Account().AddOTP(ctx, params.Signup.Email, otp)
+	if err != nil {
+		return utils.ParseError(ctx, account.NewSignupDefault(http.StatusInternalServerError), err)
+	}
+
+	// all good
+	tx.Commit()
+	good = true
+
 	return account.NewLoginOK().WithPayload(&models.Token{
 		Token: reply.Token,
 	})
@@ -136,11 +171,16 @@ func (a Authorization) SendMail(params account.SendMailParams, principal *models
 		return utils.ParseError(ctx, account.NewSendMailDefault(http.StatusBadRequest), fmt.Errorf("user been verified"))
 	}
 
-	sendMailRequest := repositories.SendMailRequest{
-		Email: principal.Email,
+	sendMailRequest := mailserver.MailVerifyRequest{
+		Recipient: principal.Email,
 	}
 
-	err := a.repo.Account().SendMail(ctx, sendMailRequest)
+	otp, err := a.smtp.SendAccountVerification(ctx, sendMailRequest)
+	if err != nil {
+		return utils.ParseError(ctx, account.NewSendMailDefault(http.StatusInternalServerError), err)
+	}
+
+	err = a.repo.Account().AddOTP(ctx, principal.Email, otp)
 	if err != nil {
 		return utils.ParseError(ctx, account.NewSendMailDefault(http.StatusInternalServerError), err)
 	}

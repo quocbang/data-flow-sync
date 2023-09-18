@@ -11,17 +11,11 @@ database:
     address: localhost:6379
     password: edit_your_own_password_for_redis
     database: 5
-  mail-server:
-    smtp-server: "smtp.gmail.com" 
-    smtp-port: 465
-    sender-email: "leducthai.access.vcmi@gmail.com"
-    password: "pjkpplfhqiyqjvsc"
-access-dir:
-  - ./limitary-hour
-  - ./station
-  - ./station-group
-  - ./material-resource
-  - ./substitution
+smtp-config:
+  smtp-server: "smtp.gmail.com" 
+  smtp-port: 465
+  sender-email: "leducthai.access.vcmi@gmail.com"
+  password: "pjkpplfhqiyqjvsc"
 mr-expiry-time: 24 # hour
 token-life-time: 5 # minute
 sync-api-server: "localhost:4422"

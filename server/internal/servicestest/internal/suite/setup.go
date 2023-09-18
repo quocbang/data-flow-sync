@@ -12,7 +12,6 @@ import (
 	"github.com/quocbang/data-flow-sync/server/internal/services"
 	"github.com/quocbang/data-flow-sync/server/internal/servicestest/internal/setupmock"
 	"github.com/quocbang/data-flow-sync/server/utils/random"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 )
@@ -22,7 +21,8 @@ type BasicSuite struct {
 	Context         context.Context
 	HttpTestRequest func(method string, target string, body io.Reader) *http.Request
 	MockRepository  func() *mocks.Repositories
-	NewMockServer   func(m *mock.Mock, msOpts setupmock.MockServerOptions) services.Services
+	MockMailServer  func() *mocks.MailServer
+	NewMockServer   func(...setupmock.Option) services.Services
 }
 
 func NewSuite() *BasicSuite {
@@ -34,6 +34,7 @@ func NewSuite() *BasicSuite {
 		Suite:           &suite.Suite{},
 		HttpTestRequest: httpTestRequest,
 		MockRepository:  setupmock.NewMockRepositories,
+		MockMailServer:  setupmock.NewMockMailServer,
 		NewMockServer:   setupmock.NewMockServer,
 	}
 }

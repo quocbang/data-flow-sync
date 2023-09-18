@@ -23,7 +23,6 @@ type RedisConfig struct {
 type DatabaseGroup struct {
 	Postgres PostgresConfig `yaml:"postgres"`
 	Redis    RedisConfig    `yaml:"redis"`
-	SMTP     SmtpConfig     `yaml:"mail-server"`
 }
 
 type SmtpConfig struct {
@@ -36,7 +35,7 @@ type SmtpConfig struct {
 type Configs struct {
 	UIDir         string        `yaml:"ui-dir"`
 	Database      DatabaseGroup `yaml:"database"`
-	AccessDir     []string      `yaml:"access-dir"`
 	MRExpiryTime  int64         `yaml:"mr-expiry-time"`
 	TokenLifeTime int32         `yaml:"token-life-time"`
+	Smtp          SmtpConfig    `yaml:"smtp-config"`
 }

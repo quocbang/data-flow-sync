@@ -28,13 +28,6 @@ var redisTest struct {
 	RedisDatabase int    `long:"redis_database" description:"The test Redis database" env:"REDIS_DATABASE_TEST"`
 }
 
-var smtpTest struct {
-	SmtpServer  string `long:"smtp-server" description:"the smtp server" env:"SMTP_SERVER_TEST"`
-	SmtpPort    int    `long:"smtp-port" description:"the smtp port" env:"SMTP_PORT_TEST"`
-	SenderEmail string `long:"smtp-sender" description:"sender email" env:"SMTP_SENDER_TEST"`
-	Password    string `long:"smtp-sender-password" description:"sender's password" env:"SMTP_PASSWORD_TEST"`
-}
-
 func InitializeDB() (repo repositories.Repositories, db *gorm.DB, rd *redis.Client, err error) {
 	if err = parseFlags(); err != nil {
 		return // return when parse failed.
@@ -55,11 +48,6 @@ func parseFlags() error {
 			LongDescription:  "Redis Configuration",
 			ShortDescription: "Redis Configuration",
 			Options:          &redisTest,
-		},
-		{
-			LongDescription:  "SMTP Configuration",
-			ShortDescription: "SMTP Configuration",
-			Options:          &smtpTest,
 		},
 	}
 
@@ -91,12 +79,6 @@ func newTestDataManager() (dm repositories.Repositories, db *gorm.DB, rd *redis.
 			Address:  redisTest.RedisAddress,
 			Password: redisTest.RedisPassword,
 			Database: redisTest.RedisDatabase,
-		},
-		SMTP: config.SmtpConfig{
-			SmtpServer:  smtpTest.SmtpServer,
-			SmtpPort:    smtpTest.SmtpPort,
-			SenderEmail: smtpTest.SenderEmail,
-			Password:    smtpTest.Password,
 		},
 	}
 

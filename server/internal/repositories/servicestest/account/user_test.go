@@ -2,27 +2,19 @@ package account
 
 import (
 	"context"
-	"fmt"
-	"io"
+	"reflect"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 
 	"bou.ke/monkey"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	cusErr "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
-	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/account"
 )
 
 func (s *Suite) TestGetAccount() {
 	assert := s.Assertions
 	ctx := context.Background()
-	// patch send mail method to reduce the real mail sending
-	monkey.Patch(fmt.Fprintln, func(w io.Writer, a ...any) (int, error) {
-		return 0, nil
-	})
-	monkey.Patch(account.OptCreator, func() string {
-		return "111111"
-	})
-	defer monkey.UnpatchAll()
 
 	// good cases
 	{ // get user by name
@@ -30,7 +22,7 @@ func (s *Suite) TestGetAccount() {
 		_, err := s.GetDm().Account().SignUp(ctx, repositories.SignUpAccountRequest{
 			CreateAccountRequest: repositories.CreateAccountRequest{
 				UserID: "james",
-				Email:  "james@gmai.com",
+				Email:  "james@gmail.com",
 			},
 		})
 		assert.NoError(err)
@@ -46,7 +38,7 @@ func (s *Suite) TestGetAccount() {
 		// Arrange
 
 		// Act
-		acc, err := s.GetDm().Account().GetAccount(ctx, "james@gmai.com")
+		acc, err := s.GetDm().Account().GetAccount(ctx, "james@gmail.com")
 
 		// Assert
 		assert.NoError(err)
@@ -57,7 +49,7 @@ func (s *Suite) TestGetAccount() {
 		// Arrange
 
 		// Act
-		_, err := s.GetDm().Account().GetAccount(ctx, "noexist@gmai.com")
+		_, err := s.GetDm().Account().GetAccount(ctx, "noexist@gmail.com")
 
 		// Assert
 		assert.Error(err)
@@ -70,47 +62,9 @@ func (s *Suite) TestGetAccount() {
 
 }
 
-func (s *Suite) TestSendMail() {
-	assert := s.Assertions
-	ctx := context.Background()
-	p := monkey.Patch(account.OptCreator, func() string {
-		return "111111"
-	})
-	defer p.Unpatch()
-
-	// Arrange
-	_, err := s.GetDm().Account().SignUp(ctx, repositories.SignUpAccountRequest{
-		CreateAccountRequest: repositories.CreateAccountRequest{
-			UserID:   "james",
-			Email:    "mori@kenda.com.tw",
-			Password: "test_password",
-		},
-	})
-	assert.NoError(err)
-
-	// Act
-	err = s.GetDm().Account().SendMail(ctx, repositories.SendMailRequest{
-		Email: "mori@kenda.com.tw",
-	})
-
-	// Assert
-	assert.NoError(err)
-	otp, err := s.GetRedis().Get(ctx, "mori@kenda.com.tw").Result()
-	assert.NoError(err)
-	assert.Equal("111111", otp)
-}
-
 func (s *Suite) TestSignUp() {
 	assert := s.Assertions
 	ctx := context.Background()
-	// patch send mail method to reduce the real mail sending
-	monkey.Patch(fmt.Fprintln, func(w io.Writer, a ...any) (int, error) {
-		return 0, nil
-	})
-	monkey.Patch(account.OptCreator, func() string {
-		return "111111"
-	})
-	defer monkey.UnpatchAll()
 
 	// Arrange
 	// Act
@@ -133,14 +87,9 @@ func (s *Suite) TestSignUp() {
 func (s *Suite) TestVerifyAccount() {
 	assert := s.Assertions
 	ctx := context.Background()
-	// patch send mail method to reduce the real mail sending
-	monkey.Patch(fmt.Fprintln, func(w io.Writer, a ...any) (int, error) {
-		return 0, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(&redis.StringCmd{}), "Result", func(*redis.StringCmd) (string, error) {
+		return "111111", nil
 	})
-	monkey.Patch(account.OptCreator, func() string {
-		return "111111"
-	})
-	defer monkey.UnpatchAll()
 
 	// Arrange
 	_, err := s.GetDm().Account().SignUp(ctx, repositories.SignUpAccountRequest{
