@@ -67,11 +67,8 @@ func NewPostgres(pgCf config.PostgresConfig) (*gorm.DB, error) {
 // NewRedis is connect to redis database.
 func NewRedis(rdCf config.RedisConfig) (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:         rdCf.Address,
-		Password:     rdCf.Password,
-		DB:           rdCf.Database,
-		WriteTimeout: 0,
-		ReadTimeout:  0,
+		Addr:     rdCf.Address,
+		Password: rdCf.Password,
 	})
 	redis.SetLogger(logging.NewRedisLogger())
 

@@ -11,7 +11,7 @@ import (
 
 	"github.com/quocbang/data-flow-sync/server/internal/mailserver"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
-	repoErrors "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
+	e "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	s "github.com/quocbang/data-flow-sync/server/internal/services"
 	"github.com/quocbang/data-flow-sync/server/swagger/models"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
@@ -20,33 +20,42 @@ import (
 	"github.com/quocbang/data-flow-sync/server/utils/roles"
 )
 
-const AuthorizationKey string = "x-data-flow-sync-auth-key"
+type key string
+
+const (
+	AuthorizationKey key = "x-data-flow-sync-auth-key"
+	SecretAccessKey  key = "secret-access-key"
+)
 
 type Authorization struct {
 	smtp          mailserver.MailServer
 	repo          repositories.Repositories
 	tokenLifeTime time.Duration
 	hasPermission func(function.FuncName, roles.Roles) bool
+	secretKey     string
 }
 
 func NewAuthorization(repo repositories.Repositories,
 	tokenLifeTime time.Duration,
 	hasPermission func(function.FuncName, roles.Roles) bool,
 	smtp mailserver.MailServer,
+	secretKey string,
 ) s.AccountServices {
 	return Authorization{
 		smtp:          smtp,
 		repo:          repo,
 		tokenLifeTime: tokenLifeTime,
 		hasPermission: hasPermission,
+		secretKey:     secretKey,
 	}
 }
 
 func (a Authorization) Auth(token string) (*models.Principal, error) {
 	ctx := context.Background()
+	ctx = context.WithValue(ctx, SecretAccessKey, a.secretKey)
 	claims, err := a.repo.Account().Authorization(ctx, token)
 	if err != nil {
-		if e, ok := repoErrors.As(err); ok {
+		if e, ok := e.As(err); ok {
 			return nil, apiErrors.New(http.StatusUnauthorized, e.Error())
 		}
 		return nil, err
@@ -68,7 +77,8 @@ func (a Authorization) Login(params account.LoginParams) middleware.Responder {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := params.HTTPRequest.Context()
+	ctx = context.WithValue(ctx, SecretAccessKey, a.secretKey)
 	signInReply, err := a.repo.Account().SignIn(ctx, signInRequest)
 	if err != nil {
 		return utils.ParseError(ctx, account.NewLoginDefault(0), err)
@@ -80,62 +90,72 @@ func (a Authorization) Login(params account.LoginParams) middleware.Responder {
 }
 
 func (a Authorization) Logout(params account.LogoutParams, principal *models.Principal) middleware.Responder {
-	token := params.HTTPRequest.Header.Get(AuthorizationKey)
+	token := params.HTTPRequest.Header.Get(string(AuthorizationKey))
 
-	ctx := context.Background()
+	ctx := params.HTTPRequest.Context()
+	ctx = context.WithValue(ctx, SecretAccessKey, a.secretKey)
 	if err := a.repo.Account().SignOut(ctx, token); err != nil {
 		return utils.ParseError(ctx, account.NewLogoutDefault(0), err)
 	}
 	return account.NewLogoutOK()
 }
 
-func (a Authorization) SignUp(params account.SignupParams) middleware.Responder {
+func (a Authorization) SignUp(params account.SignUpParams) middleware.Responder {
+	ctx := params.HTTPRequest.Context() // transfer the logger in middleware to repositories layer.
+	ctx = context.WithValue(ctx, SecretAccessKey, a.secretKey)
 	signUpRequest := repositories.SignUpAccountRequest{
 		CreateAccountRequest: repositories.CreateAccountRequest{
-			UserID:   params.Signup.Name,
-			Email:    params.Signup.Email,
-			Password: params.Signup.Password,
-		},
-		Option: repositories.Option{
-			TokenLifeTime: a.tokenLifeTime,
+			UserID:   params.SignUp.Name,
+			Email:    params.SignUp.Email,
+			Password: params.SignUp.Password,
 		},
 	}
-	ctx := context.Background()
 
 	tx, err := a.repo.Begin(ctx)
 	if err != nil {
-		return utils.ParseError(ctx, account.NewSignupDefault(http.StatusInternalServerError), err)
+		return utils.ParseError(ctx, account.NewSignUpDefault(http.StatusInternalServerError), err)
 	}
-	good := false
 
+	good := false
 	defer func() {
 		tx.RollBack()
 		if !good {
-			tx.Account().DelOTP(ctx, params.Signup.Email)
+			tx.Account().DelOTP(ctx, params.SignUp.Email)
 		}
 	}()
 
 	// add new account
-	reply, err := tx.Account().SignUp(ctx, signUpRequest)
-	if err != nil {
-		return utils.ParseError(ctx, account.NewSignupDefault(http.StatusInternalServerError), err)
+	if err := tx.Account().SignUp(ctx, signUpRequest); err != nil {
+		return utils.ParseError(ctx, account.NewSignUpDefault(http.StatusInternalServerError), err)
 	}
 
 	// send verify mail
-	otp, err := a.smtp.SendAccountVerification(ctx, mailserver.MailVerifyRequest{Recipient: params.Signup.Email})
+	otp, err := a.smtp.SendAccountVerification(ctx, mailserver.MailVerifyRequest{Recipient: params.SignUp.Email})
 	if err != nil {
-		return utils.ParseError(ctx, account.NewSignupDefault(http.StatusInternalServerError), err)
+		return utils.ParseError(ctx, account.NewSignUpDefault(http.StatusInternalServerError), err)
 	}
 
-	// add otp to temporary storage
-	err = tx.Account().AddOTP(ctx, params.Signup.Email, otp)
+	// add OTP to cache
+	err = tx.Account().AddOTP(ctx, params.SignUp.Email, otp)
 	if err != nil {
-		return utils.ParseError(ctx, account.NewSignupDefault(http.StatusInternalServerError), err)
+		return utils.ParseError(ctx, account.NewSignUpDefault(http.StatusInternalServerError), err)
 	}
 
 	// all good
 	tx.Commit()
 	good = true
+
+	// login with to get token.
+	reply, err := a.repo.Account().SignIn(ctx, repositories.SignInRequest{
+		Identifier: params.SignUp.Name,
+		Password:   params.SignUp.Password,
+		Options: repositories.Option{
+			TokenLifeTime: a.tokenLifeTime,
+		},
+	})
+	if err != nil {
+		return utils.ParseError(ctx, account.NewSignUpDefault(0), err)
+	}
 
 	return account.NewLoginOK().WithPayload(&models.Token{
 		Token: reply.Token,
@@ -143,25 +163,45 @@ func (a Authorization) SignUp(params account.SignupParams) middleware.Responder 
 }
 
 func (a Authorization) VerifyAccount(params account.VerifyAccountParams, principal *models.Principal) middleware.Responder {
-	ctx := context.Background()
+	ctx := params.HTTPRequest.Context()
 	if !principal.IsUnspecifiedUser {
 		return utils.ParseError(ctx, account.NewVerifyAccountDefault(http.StatusBadRequest), fmt.Errorf("user been verified"))
 	}
-	verifyRequest := repositories.VerifyAccountRequest{
-		Otp:   params.AccountVerify.Otp,
-		Email: principal.Email,
-		Option: repositories.Option{
-			TokenLifeTime: a.tokenLifeTime,
-		},
+
+	// get OTP in store.
+	StoredOTP, err := a.repo.Account().GetOTPByEmail(ctx, principal.Email)
+	if err != nil {
+		return utils.ParseError(ctx, account.NewVerifyAccountDefault(0), err)
 	}
 
-	reply, err := a.repo.Account().VerifyAccount(ctx, verifyRequest)
+	// compare OTP
+	OTPProvidedByUser := params.AccountVerify.Otp
+	if OTPProvidedByUser != StoredOTP {
+		return account.NewVerifyAccountBadRequest().WithPayload(&models.ErrorResponse{
+			Code:    int64(e.Code_WRONG_OPT),
+			Details: "wrong OTP",
+		})
+	}
+
+	// upgrade to user role.
+	if _, err := a.repo.Account().UpdateToUserRole(ctx, principal.Email); err != nil {
+		return utils.ParseError(ctx, account.NewVerifyAccountDefault(0), err)
+	}
+
+	// get user info with id in principal.
+	acc, err := a.repo.Account().GetAccount(ctx, principal.ID)
 	if err != nil {
-		return utils.ParseError(ctx, account.NewVerifyAccountDefault(http.StatusInternalServerError), err)
+		return utils.ParseError(ctx, account.NewVerifyAccountDefault(0), err)
+	}
+
+	// generate new token with new role.
+	token, err := acc.GenerateJWT(ctx, a.tokenLifeTime, a.secretKey)
+	if err != nil {
+		return utils.ParseError(ctx, account.NewVerifyAccountDefault(0), err)
 	}
 
 	return account.NewVerifyAccountOK().WithPayload(&models.Token{
-		Token: reply.Token,
+		Token: token,
 	})
 }
 

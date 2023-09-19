@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
-	"net/smtp"
-	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -16,15 +13,13 @@ import (
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	e "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
+	"github.com/quocbang/data-flow-sync/server/internal/services/account"
 	"github.com/quocbang/data-flow-sync/server/utils/roles"
 )
 
-var secretKey = os.Getenv("DATA_FLOW_SYNC_SECRET_KEY")
-
 type service struct {
-	pg   *gorm.DB
-	rd   *redis.Client
-	smtp *smtp.Client
+	pg *gorm.DB
+	rd *redis.Client
 }
 
 func NewService(pg *gorm.DB, rd *redis.Client) repositories.AccountServices {
@@ -101,6 +96,7 @@ func (s service) SignIn(ctx context.Context, req repositories.SignInRequest) (re
 	}
 
 	// create JWT.
+	secretKey := ctx.Value(account.SecretAccessKey).(string)
 	token, err := userInfo.GenerateJWT(ctx, req.Options.TokenLifeTime, secretKey)
 	if err != nil {
 		return repositories.SignInReply{}, err
@@ -112,6 +108,7 @@ func (s service) SignIn(ctx context.Context, req repositories.SignInRequest) (re
 // SignOut is logout the system and save token to black list of
 // the time haven't expired
 func (s service) SignOut(ctx context.Context, token string) error {
+	secretKey := ctx.Value(account.SecretAccessKey).(string)
 	claims, err := models.VerifyToken(token, secretKey)
 	if err != nil {
 		return err
@@ -138,6 +135,7 @@ func (s service) Authorization(ctx context.Context, token string) (*models.JwtCu
 	}
 
 	// verify token.
+	secretKey := ctx.Value(account.SecretAccessKey).(string)
 	claims, err := models.VerifyToken(token, secretKey)
 	if err != nil {
 		return nil, err
@@ -157,65 +155,23 @@ func (s service) UpdateToUserRole(ctx context.Context, email string) (repositori
 	return repositories.CommonUpdateAndDeleteReply{RowsAffected: reply.RowsAffected}, reply.Error
 }
 
-func (s service) SignUp(ctx context.Context, req repositories.SignUpAccountRequest) (repositories.SignInReply, error) {
+func (s service) SignUp(ctx context.Context, req repositories.SignUpAccountRequest) error {
 	_, err := s.createAccount(ctx, repositories.CreateAccountRequest{
 		UserID:   req.UserID,
 		Email:    req.Email,
 		Password: req.Password,
 	})
 	if err != nil {
-		return repositories.SignInReply{}, err
+		return err
 	}
-
-	reply, err := s.SignIn(ctx, repositories.SignInRequest{
-		Identifier: req.UserID,
-		Password:   req.Password,
-		Options: repositories.Option{
-			TokenLifeTime: req.TokenLifeTime,
-		},
-	})
-
-	if err != nil {
-		return repositories.SignInReply{}, err
-	}
-
-	return repositories.SignInReply{Token: reply.Token}, nil
+	return nil
 }
 
-func (s service) VerifyAccount(ctx context.Context, req repositories.VerifyAccountRequest) (repositories.VerifyAccountReply, error) {
-	// get otp of the account
-	actual, err := s.rd.Get(ctx, req.Email).Result()
+func (s service) GetOTPByEmail(ctx context.Context, email string) (string, error) {
+	s.rd.Conn().Select(ctx, 0)
+	value, err := s.rd.Get(ctx, email).Result()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-
-	if req.Otp != actual {
-		return repositories.VerifyAccountReply{}, e.Error{
-			Code:    e.Code_WRONG_OPT,
-			Details: "wrong otp",
-		}
-	}
-	if err != nil {
-		return repositories.VerifyAccountReply{}, err
-	}
-
-	_, err = s.UpdateToUserRole(ctx, req.Email)
-	if err != nil {
-		return repositories.VerifyAccountReply{}, err
-	}
-
-	// Newly update user
-	newUser, err := s.GetAccount(ctx, req.Email)
-	if err != nil {
-		return repositories.VerifyAccountReply{}, err
-	}
-
-	// Generate the token for new user
-	// create JWT.z
-	token, err := newUser.GenerateJWT(ctx, req.Option.TokenLifeTime, secretKey)
-	if err != nil {
-		return repositories.VerifyAccountReply{}, err
-	}
-
-	return repositories.VerifyAccountReply{Token: token}, nil
+	return value, nil
 }

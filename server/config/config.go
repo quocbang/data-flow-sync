@@ -17,7 +17,6 @@ type PostgresConfig struct {
 type RedisConfig struct {
 	Address  string `yaml:"address"`
 	Password string `yaml:"password"`
-	Database int    `yaml:"database"`
 }
 
 type DatabaseGroup struct {
@@ -26,16 +25,21 @@ type DatabaseGroup struct {
 }
 
 type SmtpConfig struct {
-	SmtpServer  string `yaml:"smtp-server"`
-	SmtpPort    int    `yaml:"smtp-port"`
-	SenderEmail string `yaml:"sender-email"`
+	SmtpServer  string `yaml:"smtp_server"`
+	SmtpPort    int    `yaml:"smtp_port"`
+	SenderEmail string `yaml:"sender_email"`
 	Password    string `yaml:"password"`
 }
 
+type ServerConfig struct {
+	SecretKey string `yaml:"secret_key"`
+}
+
 type Configs struct {
-	UIDir         string        `yaml:"ui-dir"`
+	UIDir         string        `yaml:"ui_dir"`
 	Database      DatabaseGroup `yaml:"database"`
-	MRExpiryTime  int64         `yaml:"mr-expiry-time"`
-	TokenLifeTime int32         `yaml:"token-life-time"`
-	Smtp          SmtpConfig    `yaml:"smtp-config"`
+	MRExpiryTime  int64         `yaml:"mr_expiry_time"`
+	TokenLifeTime int32         `yaml:"token_life_time"`
+	Smtp          SmtpConfig    `yaml:"smtp_config"`
+	Server        ServerConfig  `yaml:"server"`
 }

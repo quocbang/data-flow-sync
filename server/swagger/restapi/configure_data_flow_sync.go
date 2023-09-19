@@ -49,7 +49,7 @@ func parseConfig(filePath string) error {
 		return err
 	}
 
-	if err := yaml.Unmarshal(data, &configurations); err != nil {
+	if err := yaml.Unmarshal(data, configurations); err != nil {
 		return err
 	}
 
@@ -98,6 +98,7 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 		Smtp:          smtp,
 		TokenLifeTime: time.Duration(configurations.TokenLifeTime),
 		MRExpiryTime:  configurations.MRExpiryTime,
+		SecretKey:     configurations.Server.SecretKey,
 	}
 
 	apiService.RegisterAPI(api, serviceConfig)

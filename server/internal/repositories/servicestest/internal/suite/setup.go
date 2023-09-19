@@ -25,7 +25,6 @@ var postGresTest struct {
 var redisTest struct {
 	RedisAddress  string `long:"redis_address" description:"The test Redis address" env:"REDIS_ADDRESS_TEST"`
 	RedisPassword string `long:"redis_password" description:"The test Redis password " env:"REDIS_PASSWORD_TEST"`
-	RedisDatabase int    `long:"redis_database" description:"The test Redis database" env:"REDIS_DATABASE_TEST"`
 }
 
 func InitializeDB() (repo repositories.Repositories, db *gorm.DB, rd *redis.Client, err error) {
@@ -78,7 +77,6 @@ func newTestDataManager() (dm repositories.Repositories, db *gorm.DB, rd *redis.
 		Redis: config.RedisConfig{
 			Address:  redisTest.RedisAddress,
 			Password: redisTest.RedisPassword,
-			Database: redisTest.RedisDatabase,
 		},
 	}
 

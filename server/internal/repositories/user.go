@@ -22,7 +22,6 @@ type CreateAccountRequest struct {
 
 type SignUpAccountRequest struct {
 	CreateAccountRequest
-	Option
 }
 
 type CreateAccountReply struct {
@@ -32,14 +31,6 @@ type CreateAccountReply struct {
 type DeleteAccountRequest struct {
 	UserID string
 }
-
-type VerifyAccountRequest struct {
-	Otp   string
-	Email string
-	Option
-}
-
-type VerifyAccountReply commonWithToken
 
 type SendMailRequest struct {
 	Email string
