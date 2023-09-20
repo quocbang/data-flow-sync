@@ -7,10 +7,10 @@ database:
     schema: maindb
     username: postgres
     password: thaithai 
-  redis:
-    address: localhost:6379
-    password: edit_your_own_password_for_redis
-    database: 5
+redis_connection:
+  address: localhost:6379
+  password: edit_your_own_password_for_redis
+  database: 5
 smtp-config:
   smtp-server: "smtp.gmail.com" 
   smtp-port: 465

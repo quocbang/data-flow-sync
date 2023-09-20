@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package function;
+option go_package = "github.com/quocbang/data-flow-sync/server/utils/redis_db";
+
+enum redis {
+    DB_OTP = 0;
+    DB_BLACKLIST = 1;
+}

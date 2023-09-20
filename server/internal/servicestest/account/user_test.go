@@ -2,24 +2,23 @@ package account
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
+	"reflect"
+	"time"
 
-	apiErrors "github.com/go-openapi/errors"
-	"github.com/go-openapi/runtime"
+	"bou.ke/monkey"
+	"github.com/golang-jwt/jwt"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/crypto/bcrypt"
 
-	"github.com/quocbang/data-flow-sync/server/internal/mailserver"
 	"github.com/quocbang/data-flow-sync/server/internal/mocks"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	repoErrors "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	m "github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
 	a "github.com/quocbang/data-flow-sync/server/internal/services/account"
 	"github.com/quocbang/data-flow-sync/server/internal/servicestest/internal/setupmock"
-	suiteutils "github.com/quocbang/data-flow-sync/server/internal/servicestest/internal/suite"
-	"github.com/quocbang/data-flow-sync/server/swagger/models"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
-	"github.com/quocbang/data-flow-sync/server/utils/roles"
 )
 
 func (s *Suite) TestLogin() {
@@ -40,52 +39,60 @@ func (s *Suite) TestLogin() {
 
 	{ // login successfully
 		// Arrange
+		// mock repository
 		goodParams := params()
-		goodMockRepo := s.MockRepository()                                        // repositories mock struct
-		goodMockRepo.EXPECT().Account().Maybe().ReturnArguments = mock.Arguments{ // service Account
+		mockRepo := s.MockRepository()                                // repositories mock struct
+		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{ // service Account
 			func() repositories.AccountServices { // func return AccountService interface that has multiple methods,
 				account := mocks.AccountServices{} // and each method has mocks.AccountServices{} struct
-				account.EXPECT().SignIn(s.Context, repositories.SignInRequest{
-					Identifier: username,
-					Password:   password,
-				}).ReturnArguments = mock.Arguments{
-					repositories.SignInReply{Token: "token_for_tester"},
-					nil,
+				account.EXPECT().GetAccount(s.Context, "test_user").ReturnArguments = mock.Arguments{
+					m.Account{}, nil,
 				}
 				return &account
 			}(),
 		}
-		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&goodMockRepo.Mock)) // return mock Repositories struct for API service interface
+
+		// patch compare password and generate jwt
+		monkey.Patch(bcrypt.CompareHashAndPassword, func([]byte, []byte) error {
+			return nil
+		})
+		monkey.PatchInstanceMethod(reflect.TypeOf(m.Account{}), "GenerateJWT", func(m.Account, context.Context, time.Duration, string) (string, error) {
+			return "token_for_test", nil
+		})
+		defer monkey.UnpatchAll()
+
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock)) // return mock Repositories struct for API service interface
 
 		// Act
 		response := mockServer.Account.Login(goodParams).(*account.LoginOK)
 
 		// Assert
-		assertion.Equal("token_for_tester", response.Payload.Token)
+		assertion.Equal("token_for_test", response.Payload.Token)
 	}
 	{ // Internal Error: wrong password
 		// Arrange
 		wrongPassword := "wrong_password"
 		wrongPasswordParams := params()
 		wrongPasswordParams.Login.Password = &wrongPassword
-		badMockRepo := s.MockRepository()
-		badMockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
-			func() repositories.AccountServices {
-				account := mocks.AccountServices{}
-				account.EXPECT().SignIn(s.Context, repositories.SignInRequest{
-					Identifier: username,
-					Password:   wrongPassword,
-				}).ReturnArguments = mock.Arguments{
-					repositories.SignInReply{},
-					repoErrors.Error{
-						Code:    repoErrors.Code_WRONG_PASSWORD,
-						Details: "wrong password",
-					},
+		mockRepo := s.MockRepository()                                // repositories mock struct
+		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{ // service Account
+			func() repositories.AccountServices { // func return AccountService interface that has multiple methods,
+				account := mocks.AccountServices{} // and each method has mocks.AccountServices{} struct
+				account.EXPECT().GetAccount(s.Context, "test_user").ReturnArguments = mock.Arguments{
+					m.Account{}, nil,
 				}
 				return &account
 			}(),
 		}
-		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&badMockRepo.Mock))
+
+		// patch compare password and generate jwt
+		monkey.Patch(bcrypt.CompareHashAndPassword, func([]byte, []byte) error {
+			return bcrypt.ErrMismatchedHashAndPassword
+		})
+
+		defer monkey.UnpatchAll()
+
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
 
 		// Act
 		response := mockServer.Account.Login(wrongPasswordParams).(*account.LoginDefault)
@@ -93,6 +100,64 @@ func (s *Suite) TestLogin() {
 		// Assert
 		assertion.Equal(int64(repoErrors.Code_WRONG_PASSWORD), response.Payload.Code)
 		assertion.Equal("wrong password", response.Payload.Details)
+	}
+	{ // failed to generate jwt
+		// Arrange
+		// mock repository
+		mockRepo := s.MockRepository()                                // repositories mock struct
+		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{ // service Account
+			func() repositories.AccountServices { // func return AccountService interface that has multiple methods,
+				account := mocks.AccountServices{} // and each method has mocks.AccountServices{} struct
+				account.EXPECT().GetAccount(s.Context, "test_user").ReturnArguments = mock.Arguments{
+					m.Account{}, nil,
+				}
+				return &account
+			}(),
+		}
+
+		// patch compare password and generate jwt
+		monkey.Patch(bcrypt.CompareHashAndPassword, func([]byte, []byte) error {
+			return nil
+		})
+		monkey.PatchInstanceMethod(reflect.TypeOf(m.Account{}), "GenerateJWT", func(m.Account, context.Context, time.Duration, string) (string, error) {
+			return "", fmt.Errorf("failed to generate token")
+		})
+		defer monkey.UnpatchAll()
+
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
+
+		// Act
+		response := mockServer.Account.Login(params()).(*account.LoginDefault)
+
+		// Assert
+		assertion.Equal(int64(0), response.Payload.Code)
+		assertion.Equal("failed to generate token", response.Payload.Details)
+	}
+	{ // failed to get account
+		// Arrange
+		// mock repository
+		mockRepo := s.MockRepository()                                // repositories mock struct
+		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{ // service Account
+			func() repositories.AccountServices { // func return AccountService interface that has multiple methods,
+				account := mocks.AccountServices{} // and each method has mocks.AccountServices{} struct
+				account.EXPECT().GetAccount(s.Context, "test_user").ReturnArguments = mock.Arguments{
+					m.Account{}, repoErrors.Error{
+						Code:    0,
+						Details: "account not found",
+					},
+				}
+				return &account
+			}(),
+		}
+
+		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
+
+		// Act
+		response := mockServer.Account.Login(params()).(*account.LoginDefault)
+
+		// Assert
+		assertion.Equal(int64(0), response.Payload.Code)
+		assertion.Equal("account not found", response.Payload.Details)
 	}
 }
 
@@ -104,24 +169,30 @@ func (s *Suite) TestLogOut() {
 			HTTPRequest: s.HttpTestRequest(http.MethodPost, "/api/user/logout", nil),
 		}
 	}
+
 	s.Context = params().HTTPRequest.Context()
 	s.Context = context.WithValue(s.Context, a.SecretAccessKey, "")
 
 	{ // logout successfully
 		// Arrange
+		// patch VerifyToken
+		p := monkey.Patch(m.VerifyToken, func(string, string) (*m.JwtCustomClaims, error) {
+			return &m.JwtCustomClaims{
+				StandardClaims: jwt.StandardClaims{
+					ExpiresAt: time.Now().Unix(),
+				},
+			}, nil
+		})
+		defer p.Unpatch()
+
+		// mock redis
 		goodParams := params()
 		goodParams.HTTPRequest.Header.Set(string(a.AuthorizationKey), "token_for_tester")
-		mockRepo := s.MockRepository()
-		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
-			func() repositories.AccountServices {
-				account := mocks.AccountServices{}
-				account.EXPECT().SignOut(s.Context, "token_for_tester").ReturnArguments = mock.Arguments{
-					nil,
-				}
-				return &account
-			}(),
-		}
-		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
+		mockRedis := s.MockRedis()
+		mockRedis.EXPECT().AddToBackList(s.Context, "token_for_tester", time.Until(time.Unix(time.Now().Unix(), 0))).
+			ReturnArguments = mock.Arguments{nil}
+
+		mockServer := s.NewMockServer(setupmock.WithMockRedisServer(&mockRedis.Mock))
 
 		// Act
 		response := mockServer.Account.Logout(goodParams, nil)
@@ -130,215 +201,247 @@ func (s *Suite) TestLogOut() {
 		_, ok := response.(*account.LogoutOK)
 		assertion.True(ok)
 	}
-}
-
-func (s *Suite) TestAuth() {
-	assertion := s.Assertions
-	token := "token_for_tester"
-	s.Context = context.WithValue(s.Context, a.SecretAccessKey, "")
-
-	{ // authorized
-		// Arrange
-		mockRepo := s.MockRepository()
-		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
-			func() repositories.AccountServices {
-				account := mocks.AccountServices{}
-				account.EXPECT().Authorization(s.Context, token).ReturnArguments = mock.Arguments{
-					&m.JwtCustomClaims{
-						UserID:            "tester",
-						Role:              roles.Roles_UNSPECIFIED,
-						IsUnspecifiedUser: true,
-					},
-					nil,
-				}
-				return &account
-			}(),
-		}
-		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
-
-		// Act
-		principal, err := mockServer.Account.Auth(token)
-
-		// Assert
-		assertion.NoError(err)
-		assertion.Equal(&models.Principal{
-			ID:                "tester",
-			IsUnspecifiedUser: true,
-			Role:              int64(roles.Roles_UNSPECIFIED),
-		}, principal)
-	}
-	{ // token blocked
-		// Arrange
-		mockRepo := s.MockRepository()
-		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
-			func() repositories.AccountServices {
-				account := mocks.AccountServices{}
-				account.EXPECT().Authorization(s.Context, token).ReturnArguments = mock.Arguments{
-					nil,
-					repoErrors.Error{
-						Code:    repoErrors.Code_TOKEN_BLOCKED,
-						Details: "token was blocked",
-					},
-				}
-				return &account
-			}(),
-		}
-		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
-
-		// Act
-		_, err := mockServer.Account.Auth(token)
-
-		// Assert
-		assertion.Error(err)
-		assertion.Equal(apiErrors.New(http.StatusUnauthorized, repoErrors.Error{
-			Code:    repoErrors.Code_TOKEN_BLOCKED,
-			Details: "token was blocked",
-		}.Error()), err)
-	}
-}
-
-func (s *Suite) TestSendMail() {
-	s.Context = context.Background()
-	assertions := s.Assertions
-	testUserID := "james"
-	testEmail := "james@gmail.com"
-	params := func() account.SendMailParams {
-		return account.SendMailParams{
-			HTTPRequest: httptest.NewRequest(http.MethodPost, "http://example.com/api/user/send-mail", nil),
-		}
-	}
-
-	{ // good case
-		// Arrange
-		mockMailServer := s.MockMailServer()
-		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
-			Recipient: "james@gmail.com",
-		}).ReturnArguments = mock.Arguments{"111111", nil}
-
-		mockRepo := s.MockRepository()
-		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
-			func() repositories.AccountServices {
-				acc := mocks.AccountServices{}
-				acc.EXPECT().AddOTP(s.Context, "james@gmail.com", "111111").ReturnArguments =
-					mock.Arguments{nil}
-
-				return &acc
-			}(),
-		}
-
-		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock), setupmock.WithMockRepositories(&mockRepo.Mock))
-
-		// Act
-		response := mockServer.Account.SendMail(params(), &models.Principal{
-			Email:             testEmail,
-			ID:                testUserID,
-			IsUnspecifiedUser: true,
-			Role:              0,
-		})
-
-		// Assert
-		_, ok := response.(*account.SendMailOK)
-		assertions.True(ok)
-	}
 	// bad cases
-	{ // internal fail
+	{ // failed to verify token
 		// Arrange
-		mockMailServer := s.MockMailServer()
-		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
-			Recipient: "james@gmail.com",
-		}).ReturnArguments = mock.Arguments{"", repoErrors.Error{
-			Code:    0,
-			Details: "internal error",
-		}}
+		// patch VerifyToken
+		p := monkey.Patch(m.VerifyToken, func(string, string) (*m.JwtCustomClaims, error) {
+			return &m.JwtCustomClaims{}, fmt.Errorf("failed to verify token")
+		})
+		defer p.Unpatch()
 
-		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock))
+		mockServer := s.NewMockServer()
 
 		// Act
-		response := mockServer.Account.SendMail(params(), &models.Principal{
-			Email:             testEmail,
-			ID:                testUserID,
-			IsUnspecifiedUser: true,
-			Role:              0,
-		})
+		response := mockServer.Account.Logout(params(), nil).(*account.LogoutDefault)
 
 		// Assert
-		res := suiteutils.NewHttpResponseWriter()
-		cusProducer := runtime.ProducerFunc(suiteutils.MyProducer)
-		response.WriteResponse(res, cusProducer)
-
-		expect := []byte(`{"details":"internal error"}`)
-		assertions.Equal(string(expect), res.Body.String())
+		assertion.Equal(int64(0), response.Payload.Code)
+		assertion.Equal("failed to verify token", response.Payload.Details)
 	}
-	{ // identified user
+	{ // failed to add token in black list
 		// Arrange
-		mockMailServer := s.MockMailServer()
-		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
-			Recipient: "james@gmail.com",
-		}).ReturnArguments = mock.Arguments{"", repoErrors.Error{
-			Code:    0,
-			Details: "internal error",
-		}}
+		// patch VerifyToken
+		p := monkey.Patch(m.VerifyToken, func(string, string) (*m.JwtCustomClaims, error) {
+			return &m.JwtCustomClaims{
+				StandardClaims: jwt.StandardClaims{
+					ExpiresAt: time.Now().Unix(),
+				},
+			}, nil
+		})
+		defer p.Unpatch()
 
-		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock))
+		// mock redis
+		goodParams := params()
+		goodParams.HTTPRequest.Header.Set(string(a.AuthorizationKey), "token_for_tester")
+		mockRedis := s.MockRedis()
+		mockRedis.EXPECT().AddToBackList(s.Context, "token_for_tester", time.Until(time.Unix(time.Now().Unix(), 0))).
+			ReturnArguments = mock.Arguments{fmt.Errorf("failed to add token to black list")}
+
+		mockServer := s.NewMockServer(setupmock.WithMockRedisServer(&mockRedis.Mock))
 
 		// Act
-		response := mockServer.Account.SendMail(params(), &models.Principal{
-			Email:             testEmail,
-			ID:                testUserID,
-			IsUnspecifiedUser: false,
-			Role:              1,
-		})
+		response := mockServer.Account.Logout(goodParams, nil).(*account.LogoutDefault)
 
 		// Assert
-		res := suiteutils.NewHttpResponseWriter()
-		cusProducer := runtime.ProducerFunc(suiteutils.MyProducer)
-		response.WriteResponse(res, cusProducer)
-
-		expect := []byte(`{"details":"user been verified"}`)
-		assertions.Equal(string(expect), res.Body.String())
-	}
-	{ // failed to add to temporary storage
-		// Arrange
-		mockMailServer := s.MockMailServer()
-		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
-			Recipient: "james@gmail.com",
-		}).ReturnArguments = mock.Arguments{"111111", nil}
-
-		mockRepo := s.MockRepository()
-		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
-			func() repositories.AccountServices {
-				acc := mocks.AccountServices{}
-				acc.EXPECT().AddOTP(s.Context, "james@gmail.com", "111111").ReturnArguments =
-					mock.Arguments{
-						repoErrors.Error{
-							Code:    0,
-							Details: "redis error",
-						},
-					}
-
-				return &acc
-			}(),
-		}
-
-		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock), setupmock.WithMockRepositories(&mockRepo.Mock))
-
-		// Act
-		response := mockServer.Account.SendMail(params(), &models.Principal{
-			Email:             testEmail,
-			ID:                testUserID,
-			IsUnspecifiedUser: true,
-			Role:              0,
-		})
-
-		// Assert
-		res := suiteutils.NewHttpResponseWriter()
-		cusProducer := runtime.ProducerFunc(suiteutils.MyProducer)
-		response.WriteResponse(res, cusProducer)
-
-		expect := []byte(`{"details":"redis error"}`)
-		assertions.Equal(string(expect), res.Body.String())
+		assertion.Equal(int64(0), response.Payload.Code)
+		assertion.Equal("failed to add token to black list", response.Payload.Details)
 	}
 }
+
+// func (s *Suite) TestAuth() {
+// 	assertion := s.Assertions
+// 	token := "token_for_tester"
+// 	s.Context = context.WithValue(s.Context, a.SecretAccessKey, "")
+
+// 	{ // authorized
+// 		// Arrange
+
+// 		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
+
+// 		// Act
+// 		principal, err := mockServer.Account.Auth(token)
+
+// 		// Assert
+// 		assertion.NoError(err)
+// 		assertion.Equal(&models.Principal{
+// 			ID:                "tester",
+// 			IsUnspecifiedUser: true,
+// 			Role:              int64(roles.Roles_UNSPECIFIED),
+// 		}, principal)
+// 	}
+// 	{ // token blocked
+// 		// Arrange
+// 		mockRepo := s.MockRepository()
+// 		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+// 			func() repositories.AccountServices {
+// 				account := mocks.AccountServices{}
+// 				account.EXPECT().Authorization(s.Context, token).ReturnArguments = mock.Arguments{
+// 					nil,
+// 					repoErrors.Error{
+// 						Code:    repoErrors.Code_TOKEN_BLOCKED,
+// 						Details: "token was blocked",
+// 					},
+// 				}
+// 				return &account
+// 			}(),
+// 		}
+// 		mockServer := s.NewMockServer(setupmock.WithMockRepositories(&mockRepo.Mock))
+
+// 		// Act
+// 		_, err := mockServer.Account.Auth(token)
+
+// 		// Assert
+// 		assertion.Error(err)
+// 		assertion.Equal(apiErrors.New(http.StatusUnauthorized, repoErrors.Error{
+// 			Code:    repoErrors.Code_TOKEN_BLOCKED,
+// 			Details: "token was blocked",
+// 		}.Error()), err)
+// 	}
+// }
+
+// func (s *Suite) TestSendMail() {
+// 	s.Context = context.Background()
+// 	assertions := s.Assertions
+// 	testUserID := "james"
+// 	testEmail := "james@gmail.com"
+// 	params := func() account.SendMailParams {
+// 		return account.SendMailParams{
+// 			HTTPRequest: httptest.NewRequest(http.MethodPost, "http://example.com/api/user/send-mail", nil),
+// 		}
+// 	}
+
+// 	{ // good case
+// 		// Arrange
+// 		mockMailServer := s.MockMailServer()
+// 		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+// 			Recipient: "james@gmail.com",
+// 		}).ReturnArguments = mock.Arguments{"111111", nil}
+
+// 		mockRepo := s.MockRepository()
+// 		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+// 			func() repositories.AccountServices {
+// 				acc := mocks.AccountServices{}
+// 				acc.EXPECT().AddOTP(s.Context, "james@gmail.com", "111111").ReturnArguments =
+// 					mock.Arguments{nil}
+
+// 				return &acc
+// 			}(),
+// 		}
+
+// 		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock), setupmock.WithMockRepositories(&mockRepo.Mock))
+
+// 		// Act
+// 		response := mockServer.Account.SendMail(params(), &models.Principal{
+// 			Email:             testEmail,
+// 			ID:                testUserID,
+// 			IsUnspecifiedUser: true,
+// 			Role:              0,
+// 		})
+
+// 		// Assert
+// 		_, ok := response.(*account.SendMailOK)
+// 		assertions.True(ok)
+// 	}
+// 	// bad cases
+// 	{ // internal fail
+// 		// Arrange
+// 		mockMailServer := s.MockMailServer()
+// 		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+// 			Recipient: "james@gmail.com",
+// 		}).ReturnArguments = mock.Arguments{"", repoErrors.Error{
+// 			Code:    0,
+// 			Details: "internal error",
+// 		}}
+
+// 		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock))
+
+// 		// Act
+// 		response := mockServer.Account.SendMail(params(), &models.Principal{
+// 			Email:             testEmail,
+// 			ID:                testUserID,
+// 			IsUnspecifiedUser: true,
+// 			Role:              0,
+// 		})
+
+// 		// Assert
+// 		res := suiteutils.NewHttpResponseWriter()
+// 		cusProducer := runtime.ProducerFunc(suiteutils.MyProducer)
+// 		response.WriteResponse(res, cusProducer)
+
+// 		expect := []byte(`{"details":"internal error"}`)
+// 		assertions.Equal(string(expect), res.Body.String())
+// 	}
+// 	{ // identified user
+// 		// Arrange
+// 		mockMailServer := s.MockMailServer()
+// 		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+// 			Recipient: "james@gmail.com",
+// 		}).ReturnArguments = mock.Arguments{"", repoErrors.Error{
+// 			Code:    0,
+// 			Details: "internal error",
+// 		}}
+
+// 		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock))
+
+// 		// Act
+// 		response := mockServer.Account.SendMail(params(), &models.Principal{
+// 			Email:             testEmail,
+// 			ID:                testUserID,
+// 			IsUnspecifiedUser: false,
+// 			Role:              1,
+// 		})
+
+// 		// Assert
+// 		res := suiteutils.NewHttpResponseWriter()
+// 		cusProducer := runtime.ProducerFunc(suiteutils.MyProducer)
+// 		response.WriteResponse(res, cusProducer)
+
+// 		expect := []byte(`{"details":"user been verified"}`)
+// 		assertions.Equal(string(expect), res.Body.String())
+// 	}
+// 	{ // failed to add to temporary storage
+// 		// Arrange
+// 		mockMailServer := s.MockMailServer()
+// 		mockMailServer.EXPECT().SendAccountVerification(s.Context, mailserver.MailVerifyRequest{
+// 			Recipient: "james@gmail.com",
+// 		}).ReturnArguments = mock.Arguments{"111111", nil}
+
+// 		mockRepo := s.MockRepository()
+// 		mockRepo.EXPECT().Account().ReturnArguments = mock.Arguments{
+// 			func() repositories.AccountServices {
+// 				acc := mocks.AccountServices{}
+// 				acc.EXPECT().AddOTP(s.Context, "james@gmail.com", "111111").ReturnArguments =
+// 					mock.Arguments{
+// 						repoErrors.Error{
+// 							Code:    0,
+// 							Details: "redis error",
+// 						},
+// 					}
+
+// 				return &acc
+// 			}(),
+// 		}
+
+// 		mockServer := s.NewMockServer(setupmock.WithMockMailServer(&mockMailServer.Mock), setupmock.WithMockRepositories(&mockRepo.Mock))
+
+// 		// Act
+// 		response := mockServer.Account.SendMail(params(), &models.Principal{
+// 			Email:             testEmail,
+// 			ID:                testUserID,
+// 			IsUnspecifiedUser: true,
+// 			Role:              0,
+// 		})
+
+// 		// Assert
+// 		res := suiteutils.NewHttpResponseWriter()
+// 		cusProducer := runtime.ProducerFunc(suiteutils.MyProducer)
+// 		response.WriteResponse(res, cusProducer)
+
+// 		expect := []byte(`{"details":"redis error"}`)
+// 		assertions.Equal(string(expect), res.Body.String())
+// 	}
+// }
 
 // func (s *Suite) TestVerifyAccount() {
 // 	assertions := s.Assertions

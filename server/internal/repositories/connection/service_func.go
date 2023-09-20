@@ -13,7 +13,7 @@ import (
 )
 
 func (s *DB) Station() repositories.StationServices {
-	return station.NewService(s.Postgres, s.Redis)
+	return station.NewService(s.Postgres)
 }
 
 func (s *DB) Close() error {
@@ -26,20 +26,15 @@ func (s *DB) Close() error {
 		return err
 	}
 
-	// close redis
-	if err := s.Redis.Close(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func (s *DB) StationGroup() repositories.StationGroupServices {
-	return stationgroup.NewService(s.Postgres, s.Redis)
+	return stationgroup.NewService(s.Postgres)
 }
 
 func (s *DB) Account() repositories.AccountServices {
-	return account.NewService(s.Postgres, s.Redis)
+	return account.NewService(s.Postgres)
 }
 
 func (d *DB) Begin(ctx context.Context, opts ...*sql.TxOptions) (repositories.Repositories, error) {
@@ -49,7 +44,6 @@ func (d *DB) Begin(ctx context.Context, opts ...*sql.TxOptions) (repositories.Re
 
 	newHandlerPtr := &DB{
 		Postgres: d.Postgres.Begin(opts...),
-		Redis:    d.Redis,
 		TxFlag:   true,
 	}
 	return newHandlerPtr, nil

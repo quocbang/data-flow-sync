@@ -1,12 +1,10 @@
 package connection
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"net/smtp"
 
-	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -18,7 +16,6 @@ import (
 
 type DB struct {
 	Postgres *gorm.DB
-	Redis    *redis.Client
 	TxFlag   bool
 }
 
@@ -64,35 +61,14 @@ func NewPostgres(pgCf config.PostgresConfig) (*gorm.DB, error) {
 	return db, nil
 }
 
-// NewRedis is connect to redis database.
-func NewRedis(rdCf config.RedisConfig) (*redis.Client, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     rdCf.Address,
-		Password: rdCf.Password,
-	})
-	redis.SetLogger(logging.NewRedisLogger())
-
-	if err := rdb.Ping(context.Background()).Err(); err != nil {
-		return nil, err
-	}
-
-	return rdb, nil
-}
-
 func NewRepository(db Database) (*DB, error) {
 	pg, err := NewPostgres(db.Postgres)
 	if err != nil {
 		return nil, err
 	}
 
-	redis, err := NewRedis(db.Redis)
-	if err != nil {
-		return nil, err
-	}
-
 	return &DB{
 		Postgres: pg,
-		Redis:    redis,
 	}, nil
 }
 

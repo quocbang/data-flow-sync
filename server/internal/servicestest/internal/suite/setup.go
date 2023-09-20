@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
+	"bou.ke/monkey"
 	"github.com/quocbang/data-flow-sync/server/internal/mocks"
 	"github.com/quocbang/data-flow-sync/server/internal/services"
 	"github.com/quocbang/data-flow-sync/server/internal/servicestest/internal/setupmock"
@@ -22,7 +24,9 @@ type BasicSuite struct {
 	HttpTestRequest func(method string, target string, body io.Reader) *http.Request
 	MockRepository  func() *mocks.Repositories
 	MockMailServer  func() *mocks.MailServer
+	MockRedis       func() *mocks.RedisConn
 	NewMockServer   func(...setupmock.Option) services.Services
+	TimeTearDown    func()
 }
 
 func NewSuite() *BasicSuite {
@@ -35,6 +39,7 @@ func NewSuite() *BasicSuite {
 		HttpTestRequest: httpTestRequest,
 		MockRepository:  setupmock.NewMockRepositories,
 		MockMailServer:  setupmock.NewMockMailServer,
+		MockRedis:       setupmock.NewMockRedis,
 		NewMockServer:   setupmock.NewMockServer,
 	}
 }
@@ -45,6 +50,15 @@ func (b *BasicSuite) SetupSuite() {
 
 func (b *BasicSuite) TearDownSuite() {
 
+}
+
+func (b *BasicSuite) SetupTest() {
+	t := time.Now()
+	b.TimeTearDown = timeSetup(t)
+}
+
+func (b *BasicSuite) TearDownTest() {
+	b.TimeTearDown()
 }
 
 var logger *zap.Logger
@@ -78,4 +92,11 @@ func MyProducer(w io.Writer, data interface{}) error {
 	}
 
 	return nil
+}
+
+func timeSetup(t time.Time) (tearDown func()) {
+	p := monkey.Patch(time.Now, func() time.Time {
+		return t
+	})
+	return p.Unpatch
 }

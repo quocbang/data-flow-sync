@@ -21,7 +21,6 @@ type RedisConfig struct {
 
 type DatabaseGroup struct {
 	Postgres PostgresConfig `yaml:"postgres"`
-	Redis    RedisConfig    `yaml:"redis"`
 }
 
 type SmtpConfig struct {
@@ -42,4 +41,5 @@ type Configs struct {
 	TokenLifeTime int32         `yaml:"token_life_time"`
 	Smtp          SmtpConfig    `yaml:"smtp_config"`
 	Server        ServerConfig  `yaml:"server"`
+	Redis         RedisConfig   `yaml:"redis_connection"`
 }

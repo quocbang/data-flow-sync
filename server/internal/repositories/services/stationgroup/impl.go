@@ -12,9 +12,8 @@ type service struct {
 	redis *redis.Client
 }
 
-func NewService(pg *gorm.DB, rd *redis.Client) repositories.StationGroupServices {
+func NewService(pg *gorm.DB) repositories.StationGroupServices {
 	return service{
-		pg:    pg,
-		redis: rd,
+		pg: pg,
 	}
 }

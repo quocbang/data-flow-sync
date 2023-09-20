@@ -10,6 +10,7 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 
 	"github.com/quocbang/data-flow-sync/server/internal/mailserver"
+	rd_connection "github.com/quocbang/data-flow-sync/server/internal/redis_conn"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	e "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	s "github.com/quocbang/data-flow-sync/server/internal/services"
@@ -30,6 +31,7 @@ const (
 type Authorization struct {
 	smtp          mailserver.MailServer
 	repo          repositories.Repositories
+	rd            rd_connection.RedisConn
 	tokenLifeTime time.Duration
 	hasPermission func(function.FuncName, roles.Roles) bool
 	secretKey     string
@@ -39,11 +41,13 @@ func NewAuthorization(repo repositories.Repositories,
 	tokenLifeTime time.Duration,
 	hasPermission func(function.FuncName, roles.Roles) bool,
 	smtp mailserver.MailServer,
+	rd rd_connection.RedisConn,
 	secretKey string,
 ) s.AccountServices {
 	return Authorization{
 		smtp:          smtp,
 		repo:          repo,
+		rd:            rd,
 		tokenLifeTime: tokenLifeTime,
 		hasPermission: hasPermission,
 		secretKey:     secretKey,
@@ -53,7 +57,7 @@ func NewAuthorization(repo repositories.Repositories,
 func (a Authorization) Auth(token string) (*models.Principal, error) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, SecretAccessKey, a.secretKey)
-	claims, err := a.repo.Account().Authorization(ctx, token)
+	claims, err := a.authorization(ctx, token)
 	if err != nil {
 		if e, ok := e.As(err); ok {
 			return nil, apiErrors.New(http.StatusUnauthorized, e.Error())
@@ -69,17 +73,9 @@ func (a Authorization) Auth(token string) (*models.Principal, error) {
 }
 
 func (a Authorization) Login(params account.LoginParams) middleware.Responder {
-	signInRequest := repositories.SignInRequest{
-		Identifier: *params.Login.Username,
-		Password:   *params.Login.Password,
-		Options: repositories.Option{
-			TokenLifeTime: a.tokenLifeTime,
-		},
-	}
-
 	ctx := params.HTTPRequest.Context()
 	ctx = context.WithValue(ctx, SecretAccessKey, a.secretKey)
-	signInReply, err := a.repo.Account().SignIn(ctx, signInRequest)
+	signInReply, err := a.signIn(ctx, *params.Login.Username, *params.Login.Password)
 	if err != nil {
 		return utils.ParseError(ctx, account.NewLoginDefault(0), err)
 	}
@@ -94,7 +90,7 @@ func (a Authorization) Logout(params account.LogoutParams, principal *models.Pri
 
 	ctx := params.HTTPRequest.Context()
 	ctx = context.WithValue(ctx, SecretAccessKey, a.secretKey)
-	if err := a.repo.Account().SignOut(ctx, token); err != nil {
+	if err := a.signOut(ctx, token); err != nil {
 		return utils.ParseError(ctx, account.NewLogoutDefault(0), err)
 	}
 	return account.NewLogoutOK()
@@ -120,7 +116,7 @@ func (a Authorization) SignUp(params account.SignUpParams) middleware.Responder 
 	defer func() {
 		tx.RollBack()
 		if !good {
-			tx.Account().DelOTP(ctx, params.SignUp.Email)
+			a.rd.DelOTP(ctx, params.SignUp.Email)
 		}
 	}()
 
@@ -136,7 +132,7 @@ func (a Authorization) SignUp(params account.SignUpParams) middleware.Responder 
 	}
 
 	// add OTP to cache
-	err = tx.Account().AddOTP(ctx, params.SignUp.Email, otp)
+	err = a.rd.AddOTP(ctx, params.SignUp.Email, otp)
 	if err != nil {
 		return utils.ParseError(ctx, account.NewSignUpDefault(http.StatusInternalServerError), err)
 	}
@@ -146,13 +142,7 @@ func (a Authorization) SignUp(params account.SignUpParams) middleware.Responder 
 	good = true
 
 	// login with to get token.
-	reply, err := a.repo.Account().SignIn(ctx, repositories.SignInRequest{
-		Identifier: params.SignUp.Name,
-		Password:   params.SignUp.Password,
-		Options: repositories.Option{
-			TokenLifeTime: a.tokenLifeTime,
-		},
-	})
+	reply, err := a.signIn(ctx, params.SignUp.Email, params.SignUp.Password)
 	if err != nil {
 		return utils.ParseError(ctx, account.NewSignUpDefault(0), err)
 	}
@@ -169,7 +159,7 @@ func (a Authorization) VerifyAccount(params account.VerifyAccountParams, princip
 	}
 
 	// get OTP in store.
-	StoredOTP, err := a.repo.Account().GetOTPByEmail(ctx, principal.Email)
+	StoredOTP, err := a.rd.GetOTPByEmail(ctx, principal.Email)
 	if err != nil {
 		return utils.ParseError(ctx, account.NewVerifyAccountDefault(0), err)
 	}
@@ -220,7 +210,7 @@ func (a Authorization) SendMail(params account.SendMailParams, principal *models
 		return utils.ParseError(ctx, account.NewSendMailDefault(http.StatusInternalServerError), err)
 	}
 
-	err = a.repo.Account().AddOTP(ctx, principal.Email, otp)
+	err = a.rd.AddOTP(ctx, principal.Email, otp)
 	if err != nil {
 		return utils.ParseError(ctx, account.NewSendMailDefault(http.StatusInternalServerError), err)
 	}

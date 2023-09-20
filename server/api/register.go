@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/quocbang/data-flow-sync/server/internal/mailserver"
+	rd_connection "github.com/quocbang/data-flow-sync/server/internal/redis_conn"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	"github.com/quocbang/data-flow-sync/server/internal/services"
 	a "github.com/quocbang/data-flow-sync/server/internal/services/account"
@@ -15,6 +16,7 @@ import (
 type ServiceConfig struct {
 	Repo          repositories.Repositories
 	Smtp          mailserver.MailServer
+	Redis         rd_connection.RedisConn
 	TokenLifeTime time.Duration
 	MRExpiryTime  int64
 	SecretKey     string
@@ -22,7 +24,7 @@ type ServiceConfig struct {
 
 func NewHandleService(s ServiceConfig) *services.Services {
 	return services.RegisterService(
-		a.NewAuthorization(s.Repo, s.TokenLifeTime, roles.HasPermission, s.Smtp, s.SecretKey),
+		a.NewAuthorization(s.Repo, s.TokenLifeTime, roles.HasPermission, s.Smtp, s.Redis, s.SecretKey),
 	)
 }
 

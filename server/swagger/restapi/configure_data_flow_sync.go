@@ -93,9 +93,13 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 		log.Fatalf("failed to register mail server, error: %v", err)
 	}
 
+	// connect to Redis
+	rd, err := server.RegisterRedis(configurations.Redis)
+
 	serviceConfig := apiService.ServiceConfig{
 		Repo:          repo,
 		Smtp:          smtp,
+		Redis:         rd,
 		TokenLifeTime: time.Duration(configurations.TokenLifeTime),
 		MRExpiryTime:  configurations.MRExpiryTime,
 		SecretKey:     configurations.Server.SecretKey,

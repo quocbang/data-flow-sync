@@ -22,6 +22,10 @@ func NewMockMailServer() *mocks.MailServer {
 	return &mocks.MailServer{}
 }
 
+func NewMockRedis() *mocks.RedisConn {
+	return &mocks.RedisConn{}
+}
+
 type Option func(*api.ServiceConfig)
 
 // NewMockServer initialize mock server.
@@ -48,6 +52,17 @@ func WithMockRepositories(m *mock.Mock) Option {
 func WithMockMailServer(m *mock.Mock) Option {
 	return func(sc *api.ServiceConfig) {
 		sc.Smtp = &mocks.MailServer{
+			Mock: mock.Mock{
+				Calls:         m.Calls,
+				ExpectedCalls: m.ExpectedCalls,
+			},
+		}
+	}
+}
+
+func WithMockRedisServer(m *mock.Mock) Option {
+	return func(sc *api.ServiceConfig) {
+		sc.Redis = &mocks.RedisConn{
 			Mock: mock.Mock{
 				Calls:         m.Calls,
 				ExpectedCalls: m.ExpectedCalls,
