@@ -9,5 +9,7 @@ type Models interface {
 func GetModelList() []Models {
 	return []Models{
 		&Account{},
+		&MergeRequest{},
+		&File{},
 	}
 }
