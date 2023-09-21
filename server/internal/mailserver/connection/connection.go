@@ -9,7 +9,8 @@ import (
 )
 
 type SMTP struct {
-	smtp *smtp.Client
+	smtp   *smtp.Client
+	sender string
 }
 
 func NewSMTP(config config.SmtpConfig) (*SMTP, error) {
@@ -44,11 +45,6 @@ func NewSMTPConnection(config config.SmtpConfig) (*smtp.Client, error) {
 
 	// Authenticate
 	if err := client.Auth(auth); err != nil {
-		return nil, err
-	}
-
-	// set sender
-	if err := client.Mail(config.SenderEmail); err != nil {
 		return nil, err
 	}
 

@@ -34,6 +34,11 @@ func OptCreator() string {
 }
 
 func (s SMTP) SendAccountVerification(ctx context.Context, req mailserver.MailVerifyRequest) (string, error) {
+	// set sender
+	if err := s.smtp.Mail(s.sender); err != nil {
+		return "", err
+	}
+
 	if err := s.smtp.Rcpt(req.Recipient); err != nil {
 		return "", err
 	}
