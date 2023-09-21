@@ -49,7 +49,7 @@ func parseConfig(filePath string) error {
 		return err
 	}
 
-	if err := yaml.Unmarshal(data, &configurations); err != nil {
+	if err := yaml.Unmarshal(data, configurations); err != nil {
 		return err
 	}
 
@@ -81,15 +81,28 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 
 	api.JSONProducer = runtime.JSONProducer()
 
+	// connect to database server and its auxiliary
 	repo, err := server.RegisterRepository(configurations.Database)
 	if err != nil {
 		log.Fatalf("failed to register repository, error: %v", err)
 	}
 
+	// connect to smtp server
+	smtp, err := server.RegisterSmtp(configurations.Smtp)
+	if err != nil {
+		log.Fatalf("failed to register mail server, error: %v", err)
+	}
+
+	// connect to Redis
+	rd, err := server.RegisterRedis(configurations.Redis)
+
 	serviceConfig := apiService.ServiceConfig{
 		Repo:          repo,
+		Smtp:          smtp,
+		Redis:         rd,
 		TokenLifeTime: time.Duration(configurations.TokenLifeTime),
 		MRExpiryTime:  configurations.MRExpiryTime,
+		SecretKey:     configurations.Server.SecretKey,
 	}
 
 	apiService.RegisterAPI(api, serviceConfig)

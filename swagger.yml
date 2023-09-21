@@ -3,7 +3,7 @@ info:
   version: "1.0.0"
   title: "Sample API"
   description: "API documentation for a data flow sync"
-  
+
 schemes:
   - http
   - https
@@ -15,9 +15,9 @@ basePath: /api
 consumes: [application/json]
 produces: [application/json]
 
-tags: 
+tags:
   - name: account
-    description: user account 
+    description: user account
   - name: limitary-hour
     description: limitary hour manager
   - name: substitution
@@ -50,17 +50,14 @@ paths:
               - "password"
             properties:
               username:
-                type: string              
+                type: string
               password:
-                type: string                
+                type: string
       responses:
         200:
           description: "Successful login"
           schema:
-            type: object
-            properties:
-              token:
-                type: string
+            $ref: "#/definitions/Token"
         400:
           description: Bad Request
           schema:
@@ -77,11 +74,100 @@ paths:
       operationId: Logout
       tags:
         - "account"
-      security: 
+      security:
         - api_key: []
       responses:
         200:
           description: OK
+        default:
+          $ref: "#/responses/Default"
+  /user/sign-up:
+    post:
+      summary: user sign up form
+      operationId: SignUp
+      tags:
+        - "account"
+      security: []
+      parameters:
+        - in: body
+          name: SignUp
+          description: user credential information
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              password:
+                type: string
+              name:
+                type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: "#/definitions/Token"
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        default:
+          $ref: "#/responses/Default"
+  /user/verify-account:
+    post:
+      summary: verify signed up account
+      operationId: VerifyAccount
+      tags:
+        - "account"
+      security:
+        - api_key: []
+      parameters:
+        - in: body
+          name: Account-verify
+          required: true
+          schema:
+            type: object
+            properties:
+              otp:
+                type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: "#/definitions/Token"
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        default:
+          $ref: "#/responses/Default"
+  /user/send-mail:
+    post:
+      summary: send otp to specified email address
+      operationId: SendMail
+      tags:
+        - "account"
+      security:
+        - api_key: []
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         default:
           $ref: "#/responses/Default"
 
@@ -104,7 +190,7 @@ paths:
           description: OK
   /limitary-hour/different/{mergeRequestID}:
     get:
-      summary: get a diff of the file in the temporary area and target area 
+      summary: get a diff of the file in the temporary area and target area
       tags:
         - "limitary-hour"
       operationId: GetLimitaryHourDiff
@@ -115,17 +201,17 @@ paths:
           type: string
       security:
         - api_key: []
-      
+
       responses:
-        200: 
+        200:
           description: OK
           schema:
             type: object
-            properties: 
+            properties:
               data:
                 type: array
-                items: 
-                  $ref: "#/definitions/Limitary-hour"         
+                items:
+                  $ref: "#/definitions/Limitary-hour"
         400:
           description: Bad Request
           schema:
@@ -146,17 +232,17 @@ paths:
         - in: body
           name: body
           schema:
-            properties: 
+            properties:
               TemporaryPath:
                 type: string
                 description: temporary file path
               TargetPath:
                 type: string
-                description: target file path     
+                description: target file path
       responses:
-        200: 
+        200:
           description: OK
-    get: 
+    get:
       summary: get limitary hour merge requests
       operationId: ListMergeRequests
       tags:
@@ -164,14 +250,14 @@ paths:
       security:
         - api_key: []
       responses:
-        200: 
+        200:
           description: OK
           schema:
             type: object
-            properties: 
-              data: 
+            properties:
+              data:
                 type: array
-                items: 
+                items:
                   $ref: "#/definitions/MergeRequest"
 
   # station zone
@@ -202,7 +288,10 @@ definitions:
       role:
         type: integer
         description: user role
-        x-omitempty: false        
+        x-omitempty: false
+      Email:
+        type: string
+        description: user's email
       IsUnspecifiedUser:
         type: boolean
         description: true if the user has not verified
@@ -216,7 +305,7 @@ definitions:
       details:
         type: string
         description: error details
-        
+
   Token:
     type: object
     properties:
@@ -232,20 +321,20 @@ definitions:
       Min:
         type: integer
         description: min
-        minLength: 3          
+        minLength: 3
       Max:
         type: integer
         description: max
 
   MergeRequest:
     type: object
-    properties: 
+    properties:
       MergeRequestID:
         type: string
         description: merge request id
       files:
         type: object
-        properties: 
+        properties:
           TemporaryPath:
             type: string
             description: temporary file path
@@ -259,7 +348,7 @@ definitions:
         type: string
         format: date-time
         example: "2017-07-21T17:32:28Z"
-        description: latest modified time 
+        description: latest modified time
       CreateBy:
         type: string
         description: merge request owner

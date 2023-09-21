@@ -1,10 +1,10 @@
 package connection
 
 import (
-	"context"
+	"crypto/tls"
 	"fmt"
+	"net/smtp"
 
-	"github.com/go-redis/redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -16,7 +16,7 @@ import (
 
 type DB struct {
 	Postgres *gorm.DB
-	Redis    *redis.Client
+	TxFlag   bool
 }
 
 type options struct {
@@ -43,12 +43,13 @@ func parseOption(opts ...Options) *options {
 }
 
 func NewPostgres(pgCf config.PostgresConfig) (*gorm.DB, error) {
-	connectString := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
+	connectString := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d search_path=%s",
 		pgCf.Address,
 		pgCf.UserName,
 		pgCf.Password,
 		pgCf.Name,
 		pgCf.Port,
+		pgCf.Schema,
 	)
 	db, err := gorm.Open(postgres.Open(connectString), &gorm.Config{
 		Logger: logging.NewGormLogger(),
@@ -60,36 +61,14 @@ func NewPostgres(pgCf config.PostgresConfig) (*gorm.DB, error) {
 	return db, nil
 }
 
-// NewRedis is connect to redis database.
-func NewRedis(rdCf config.RedisConfig) (*redis.Client, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     rdCf.Address,
-		Password: rdCf.Password,
-		DB:       rdCf.Database,
-	})
-	redis.SetLogger(logging.NewRedisLogger())
-
-	if err := rdb.Ping(context.Background()).Err(); err != nil {
-		return nil, err
-	}
-
-	return rdb, nil
-}
-
 func NewRepository(db Database) (*DB, error) {
 	pg, err := NewPostgres(db.Postgres)
 	if err != nil {
 		return nil, err
 	}
 
-	redis, err := NewRedis(db.Redis)
-	if err != nil {
-		return nil, err
-	}
-
 	return &DB{
 		Postgres: pg,
-		Redis:    redis,
 	}, nil
 }
 
@@ -126,4 +105,35 @@ func migrateTable(pg *gorm.DB, ms ...models.Models) error {
 		dst = append(dst, m)
 	}
 	return pg.AutoMigrate(dst...)
+}
+
+func NewSMTPConnection(config config.SmtpConfig) (*smtp.Client, error) {
+	// Create an authentication mechanism
+	auth := smtp.PlainAuth("", config.SenderEmail, config.Password, config.SmtpServer)
+
+	// Create a TLS configuration
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: false, // You might want to set this to false in production
+		ServerName:         config.SmtpServer,
+	}
+
+	// Connect to the SMTP server with a TLS connection
+	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:%d", config.SmtpServer, config.SmtpPort), tlsConfig)
+	if err != nil {
+		return &smtp.Client{}, err
+	}
+
+	// Connect to the SMTP server
+	// Establish the SMTP client
+	client, err := smtp.NewClient(conn, config.SmtpServer)
+	if err != nil {
+		return &smtp.Client{}, err
+	}
+
+	// Authenticate
+	if err := client.Auth(auth); err != nil {
+		return &smtp.Client{}, err
+	}
+
+	return client, nil
 }

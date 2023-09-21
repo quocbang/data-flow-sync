@@ -12,9 +12,10 @@ import (
 )
 
 type Account struct {
-	UserID   string      `gorm:"column:id;type:text;primaryKey"`
-	Password []byte      `gorm:"type:bytea;not null"`
-	Role     roles.Roles `gorm:"not null"`
+	UserID   string      `gorm:"type:text;primaryKey"`
+	Email    string      `gorm:"type:text;unique"`
+	Password []byte      `gorm:"type:bytea;NOT NULL"`
+	Roles    roles.Roles `gorm:"type:smallint;NOT NULL"`
 }
 
 func (a *Account) TableName() string {
@@ -25,6 +26,7 @@ type JwtCustomClaims struct {
 	UserID            string      `json:"user_id"`
 	Role              roles.Roles `json:"role"`
 	IsUnspecifiedUser bool        `json:"is_unspecified_user"`
+	Email             string      `json:"email"`
 	jwt.StandardClaims
 }
 
@@ -38,8 +40,9 @@ func (a Account) GenerateJWT(ctx context.Context, tokenLifeTime time.Duration, s
 
 	claims := &JwtCustomClaims{
 		UserID:            a.UserID,
-		Role:              a.Role,
+		Role:              a.Roles,
 		IsUnspecifiedUser: a.IsUnSpecifiedUser(),
+		Email:             a.Email,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * tokenLifeTime).Unix(),
 		},
@@ -57,7 +60,7 @@ func (a Account) GenerateJWT(ctx context.Context, tokenLifeTime time.Duration, s
 
 // check whether is unspecified user
 func (a Account) IsUnSpecifiedUser() bool {
-	return a.Role == roles.Roles_UNSPECIFIED
+	return a.Roles == roles.Roles_UNSPECIFIED
 }
 
 // ToHashPassword hashes the password using bcrypt

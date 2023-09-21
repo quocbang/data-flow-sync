@@ -17,18 +17,29 @@ type PostgresConfig struct {
 type RedisConfig struct {
 	Address  string `yaml:"address"`
 	Password string `yaml:"password"`
-	Database int    `yaml:"database"`
 }
 
 type DatabaseGroup struct {
 	Postgres PostgresConfig `yaml:"postgres"`
-	Redis    RedisConfig    `yaml:"redis"`
+}
+
+type SmtpConfig struct {
+	SmtpServer  string `yaml:"smtp_server"`
+	SmtpPort    int    `yaml:"smtp_port"`
+	SenderEmail string `yaml:"sender_email"`
+	Password    string `yaml:"password"`
+}
+
+type ServerConfig struct {
+	SecretKey string `yaml:"secret_key"`
 }
 
 type Configs struct {
-	UIDir         string        `yaml:"ui-dir"`
+	UIDir         string        `yaml:"ui_dir"`
 	Database      DatabaseGroup `yaml:"database"`
-	AccessDir     []string      `yaml:"access-dir"`
-	MRExpiryTime  int64         `yaml:"mr-expiry-time"`
-	TokenLifeTime int32         `yaml:"token-life-time"`
+	MRExpiryTime  int64         `yaml:"mr_expiry_time"`
+	TokenLifeTime int32         `yaml:"token_life_time"`
+	Smtp          SmtpConfig    `yaml:"smtp_config"`
+	Server        ServerConfig  `yaml:"server"`
+	Redis         RedisConfig   `yaml:"redis_connection"`
 }

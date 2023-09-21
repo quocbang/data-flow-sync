@@ -3,14 +3,12 @@ package repositories
 import "time"
 
 type SignInRequest struct {
-	UserID   string
-	Password string
-	Options  Option
+	Identifier string
+	Password   string
+	Options    Option
 }
 
-type SignInReply struct {
-	Token string
-}
+type SignInReply commonWithToken
 
 type Option struct {
 	TokenLifeTime time.Duration
@@ -18,7 +16,12 @@ type Option struct {
 
 type CreateAccountRequest struct {
 	UserID   string
+	Email    string
 	Password string
+}
+
+type SignUpAccountRequest struct {
+	CreateAccountRequest
 }
 
 type CreateAccountReply struct {
@@ -27,4 +30,8 @@ type CreateAccountReply struct {
 
 type DeleteAccountRequest struct {
 	UserID string
+}
+
+type SendMailRequest struct {
+	Email string
 }

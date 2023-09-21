@@ -35,7 +35,7 @@ func ParseError(ctx context.Context, d defaultError, err error) middleware.Respo
 	} else {
 		d.SetStatusCode(http.StatusInternalServerError)
 		d.SetPayload(&models.ErrorResponse{
-			Details: e.Error(),
+			Details: err.Error(),
 		})
 	}
 
