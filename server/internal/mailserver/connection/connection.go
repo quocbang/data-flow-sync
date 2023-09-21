@@ -32,19 +32,24 @@ func NewSMTPConnection(config config.SmtpConfig) (*smtp.Client, error) {
 	// Connect to the SMTP server with a TLS connection
 	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:%d", config.SmtpServer, config.SmtpPort), tlsConfig)
 	if err != nil {
-		return &smtp.Client{}, err
+		return nil, err
 	}
 
 	// Connect to the SMTP server
 	// Establish the SMTP client
 	client, err := smtp.NewClient(conn, config.SmtpServer)
 	if err != nil {
-		return &smtp.Client{}, err
+		return nil, err
 	}
 
 	// Authenticate
 	if err := client.Auth(auth); err != nil {
-		return &smtp.Client{}, err
+		return nil, err
+	}
+
+	// set sender
+	if err := client.Mail(config.SenderEmail); err != nil {
+		return nil, err
 	}
 
 	return client, nil

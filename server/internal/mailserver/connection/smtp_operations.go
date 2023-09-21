@@ -7,7 +7,6 @@ import (
 	"time"
 
 	mailserver "github.com/quocbang/data-flow-sync/server/internal/mailserver"
-	"github.com/quocbang/data-flow-sync/server/utils/mail"
 )
 
 func (s *SMTP) Close() error {
@@ -35,11 +34,6 @@ func OptCreator() string {
 }
 
 func (s SMTP) SendAccountVerification(ctx context.Context, req mailserver.MailVerifyRequest) (string, error) {
-	// Set the sender
-	if err := s.smtp.Mail(mail.GetOtpMailSender()); err != nil {
-		return "", err
-	}
-
 	if err := s.smtp.Rcpt(req.Recipient); err != nil {
 		return "", err
 	}
