@@ -66,9 +66,9 @@ func (d *DB) RollBack() error {
 }
 
 func (s *DB) File() repositories.FileServices {
-	return file.NewService(s.Postgres, s.Redis)
+	return file.NewService(s.Postgres)
 }
 
 func (s *DB) MergeRequest() repositories.MergeRequestServices {
-	return mr.NewService(s.Postgres, s.Redis)
+	return mr.NewService(s.Postgres)
 }

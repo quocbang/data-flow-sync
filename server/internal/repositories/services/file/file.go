@@ -3,7 +3,6 @@ package file
 import (
 	"context"
 
-	"github.com/go-redis/redis/v9"
 	"gorm.io/gorm"
 
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
@@ -12,14 +11,12 @@ import (
 )
 
 type service struct {
-	pg    *gorm.DB
-	redis *redis.Client
+	pg *gorm.DB
 }
 
-func NewService(pg *gorm.DB, redis *redis.Client) repositories.FileServices {
+func NewService(pg *gorm.DB) repositories.FileServices {
 	return service{
-		pg:    pg,
-		redis: redis,
+		pg: pg,
 	}
 }
 
