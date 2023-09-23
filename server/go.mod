@@ -23,8 +23,10 @@ require (
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.25.0
-	golang.org/x/crypto v0.13.0
-	golang.org/x/net v0.15.0
+	golang.org/x/crypto v0.12.0
+	golang.org/x/net v0.14.0
+	google.golang.org/protobuf v1.31.0
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/gorm v1.25.3

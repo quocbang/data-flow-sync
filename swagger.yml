@@ -323,6 +323,27 @@ paths:
                 type: array                
                 items:
                   $ref: "#/definitions/StationMergeRequest"
+              mergeRequestInfo:
+                type: object
+                properties:
+                  historyChanged:
+                    type: array
+                    items:
+                      type: string
+              mergeRequestStatus:
+                type: object
+                properties:
+                  isApproved:
+                    type: boolean
+                    default: false
+                  isOpening:
+                    type: boolean
+                    default: false
+                  isMerged:
+                    type: boolean
+                    default: false
+
+
                     
         400:
           description: Bad Request
@@ -453,13 +474,14 @@ definitions:
     properties:    
       file:
         $ref: "#/definitions/Station"
+        x-omitempty: true
       added:                
-        type: array
+        type: object
         x-omitempty: true
-        items:
-          $ref: "#/definitions/Station"
+        $ref: "#/definitions/Station"
+        # items:
       deleted:
-        type: array
+        type: object
         x-omitempty: true
-        items:
-          $ref: "#/definitions/Station"
+        $ref: "#/definitions/Station"
+        # items:

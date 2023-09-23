@@ -10,14 +10,18 @@ type Services interface {
 	Account() AccountServices
 	Station() StationServices
 	StationGroup() StationGroupServices
+	File() FileServices
+	MergeRequest() MergeRequestServices
 }
 
 type StationServices interface {
-	CreateMergeRequest(context.Context) (CreateStationMRReply, error)
-	GetMergeRequest(context.Context, GetMRRequest) (GetMRReply, error)
 }
 
 type StationGroupServices interface {
+}
+
+type FileServices interface {
+	GetFile(context.Context, GetFileRequest) (GetFileReply, error)
 }
 
 type AccountServices interface {
@@ -25,4 +29,10 @@ type AccountServices interface {
 	GetAccount(context.Context, string) (models.Account, error)
 	SignUp(context.Context, SignUpAccountRequest) error
 	UpdateToUserRole(context.Context, string) (CommonUpdateAndDeleteReply, error)
+}
+
+type MergeRequestServices interface {
+	CreateMergeRequest(context.Context, CreateMRRequest) (CreateMRReply, error)
+	GetMergeRequest(context.Context, GetMRRequest) (GetMRReply, error)
+	GetMergeRequestOpeningByFileID(context.Context, string) (GetMergeRequestOpeningByFileIDReply, error)
 }

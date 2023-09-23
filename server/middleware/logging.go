@@ -49,6 +49,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 				zap.String("request_url", r.URL.Path),
 				zap.Int("status_code", ww.Status()),
 				zap.String("remote_address", r.RemoteAddr),
+				zap.String("remote_host", r.Host),
 				zap.String("x-forwarded-for", r.Header.Get("x-forwarded-for")),
 				zap.String("duration", time.Since(start).String()),
 			}
