@@ -1,63 +1,91 @@
 package diff
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
-	"github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
 )
 
 func TestFindDiff(t *testing.T) {
-	type TestFindDiff struct {
-		Name string `yaml:"name,omitempty"`
-		Age  int    `yaml:"age,omitempty"`
-	}
 	assertion := assert.New(t)
 
-	// wrong type expected is struct
-	{
-		// Arrange
-		// Act
-		_, _, err := FindDiff[string]([]byte{}, []byte{})
+	type Test struct {
+		Name  string   `json:"name,omitempty"`
+		Age   int      `json:"age,omitempty"`
+		Habit []string `json:"habit,omitempty"`
+	}
 
-		// Assert
-		assertion.Error(err)
-		expected := errors.Error{
-			Details: "wrong type during  find diff, expect type is [struct] but found [string]",
-		}
-		assertion.Equal(expected, err)
+	old := Test{
+		Name: "TEST_USER",
+		Age:  20,
+		Habit: []string{
+			"listen to lofi hip hop music",
+			"coding at night",
+			"ish",
+		},
+	}
+
+	new := Test{
+		Name: "TEST_USER",
+		Age:  23,
+		Habit: []string{
+			"listen to lofi hip hop music",
+			"wake up at 6 am",
+			"sleep at 10 pm",
+			"ish",
+		},
 	}
 
 	// good case
 	{
 		// Arrange
-		x := TestFindDiff{
-			Name: "test_name_x",
-			Age:  18,
-		}
-		y := TestFindDiff{
-			Name: "test_name_y",
-			Age:  18,
-		}
-		bx, err := yaml.Marshal(x)
+		oldByte, err := json.Marshal(old)
 		assertion.NoError(err)
-		by, err := yaml.Marshal(y)
+		newByte, err := json.Marshal(new)
 		assertion.NoError(err)
+
 		// Act
-		added, deleted, err := FindDiff[TestFindDiff](bx, by)
+		added, deleted, err := FindDiff[Test](oldByte, newByte)
 
 		// Assert
 		assertion.NoError(err)
-		addedExpected, err := yaml.Marshal(TestFindDiff{
-			Name: "test_name_y",
+		expectedAdded, err := json.Marshal(Test{
+			Age: 23,
+			Habit: []string{
+				"",
+				"wake up at 6 am",
+				"sleep at 10 pm",
+				"",
+			},
 		})
-		assertion.NoError(err)
-		deletedExpected, err := yaml.Marshal(TestFindDiff{
-			Name: "test_name_x",
+		expectedDeleted, err := json.Marshal(Test{
+			Age: 20,
+			Habit: []string{
+				"",
+				"coding at night",
+				"",
+			},
 		})
+		assertion.Equal(expectedAdded, added)
+		assertion.Equal(expectedDeleted, deleted)
+	}
+
+	// bad case: wrong type during find diff
+	{
+		// Arrange
+		oldByte, err := json.Marshal(old)
 		assertion.NoError(err)
-		assertion.Equal(addedExpected, added)
-		assertion.Equal(deletedExpected, deleted)
+		newByte, err := json.Marshal(new)
+		assertion.NoError(err)
+
+		// Act
+		_, _, err = FindDiff[map[string]interface{}](oldByte, newByte)
+
+		// Assert
+		assertion.Error(err)
+		expected := fmt.Errorf("wrong type during find diff, expect type is [struct or slice] but found [map]")
+		assertion.Equal(expected.Error(), err.Error())
 	}
 }

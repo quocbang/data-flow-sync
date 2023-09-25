@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-
-	"gopkg.in/yaml.v3"
-	// "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 )
 
 // flag definition.
@@ -25,12 +22,12 @@ const (
 // the generic type should is a struct and that has yaml tag.
 func FindDiff[T any](x, y []byte) ([]byte, []byte, error) {
 	var yamlX T
-	if err := yaml.Unmarshal(x, &yamlX); err != nil {
+	if err := json.Unmarshal(x, &yamlX); err != nil {
 		return nil, nil, err
 	}
 
 	var yamlY T
-	if err := yaml.Unmarshal(y, &yamlY); err != nil {
+	if err := json.Unmarshal(y, &yamlY); err != nil {
 		return nil, nil, err
 	}
 
@@ -51,7 +48,7 @@ func FindDiff[T any](x, y []byte) ([]byte, []byte, error) {
 			return nil, nil, err
 		}
 	default:
-		return nil, nil, fmt.Errorf("wrong type during  find diff, expect type is [struct] but found")
+		return nil, nil, fmt.Errorf("wrong type during find diff, expect type is [struct or slice] but found [%v]", reflect.TypeOf(*new(T)).Kind())
 	}
 
 	// marshal struct to []byte and remove all empty fields use OMITEMPTY

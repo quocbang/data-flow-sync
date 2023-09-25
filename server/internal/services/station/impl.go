@@ -1,10 +1,10 @@
 package station
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/go-openapi/runtime/middleware"
@@ -38,13 +38,18 @@ func NewStation(repo repositories.Repositories, mrExpiryTime int64,
 }
 
 func (s Station) CreateStationMergeRequest(params station.CreateStationMergeRequestParams, principal *models.Principal) middleware.Responder {
-	ctx, cancel := context.WithTimeout(params.HTTPRequest.Context(), (time.Second * 1))
-	defer cancel()
+	if !s.HasPermission(function.FuncName_CREATE_STATION_MERGE_REQUEST, roles.Roles(principal.Role)) {
+		return station.NewCreateStationMergeRequestDefault(http.StatusForbidden).WithPayload(&models.ErrorResponse{
+			Code:    int64(repoErr.Code_FORBIDDEN),
+			Details: "permission denied",
+		})
+	}
+	ctx := params.HTTPRequest.Context()
 
-	if params.Body.Files == nil {
+	if len(params.Body.Files) == 0 {
 		return station.NewCreateStationMergeRequestBadRequest().WithPayload(&models.ErrorResponse{
 			Code:    0,
-			Details: "missing station body",
+			Details: "missing request body",
 		})
 	}
 
@@ -128,13 +133,19 @@ func (s Station) CreateStationMergeRequest(params station.CreateStationMergeRequ
 }
 
 func (s Station) GetStationMergeRequest(params station.GetStationMergeRequestParams, principal *models.Principal) middleware.Responder {
+	if !s.HasPermission(function.FuncName_GET_STATION_MERGE_REQUEST, roles.Roles(principal.Role)) {
+		return station.NewCreateStationMergeRequestDefault(http.StatusForbidden).WithPayload(&models.ErrorResponse{
+			Code:    int64(repoErr.Code_FORBIDDEN),
+			Details: "permission denied",
+		})
+	}
 	if params.ID == 0 {
 		return station.NewGetStationMergeRequestBadRequest().WithPayload(&models.ErrorResponse{
 			Details: "missing merge request id",
 		})
 	}
 
-	ctx := context.Background()
+	ctx := params.HTTPRequest.Context()
 	reply, err := s.Repository.MergeRequest().GetMergeRequest(ctx, repositories.GetMRRequest{
 		MergeRequestID: params.ID,
 	})
@@ -146,17 +157,17 @@ func (s Station) GetStationMergeRequest(params station.GetStationMergeRequestPar
 	for i, f := range reply.MergeRequest.File {
 		added, deleted, file := &models.Station{}, &models.Station{}, &models.Station{}
 		if err := json.Unmarshal(f.FileChanged.Added, added); err != nil {
-			return station.NewGetStationMergeRequestBadRequest().WithPayload(&models.ErrorResponse{
-				Details: fmt.Sprintf("failed to unmarshal added change, error: %v", err),
+			return station.NewGetStationMergeRequestInternalServerError().WithPayload(&models.ErrorResponse{
+				Details: fmt.Sprintf("failed to unmarshal added, error: %v", err),
 			})
 		}
 		if err := json.Unmarshal(f.FileChanged.Deleted, deleted); err != nil {
-			return station.NewGetStationMergeRequestBadRequest().WithPayload(&models.ErrorResponse{
-				Details: fmt.Sprintf("failed to unmarshal deleted change, error: %v", err),
+			return station.NewGetStationMergeRequestInternalServerError().WithPayload(&models.ErrorResponse{
+				Details: fmt.Sprintf("failed to unmarshal deleted, error: %v", err),
 			})
 		}
 		if err := json.Unmarshal(f.FileCompare.FileAfterMerge, file); err != nil {
-			return station.NewGetStationMergeRequestBadRequest().WithPayload(&models.ErrorResponse{
+			return station.NewGetStationMergeRequestInternalServerError().WithPayload(&models.ErrorResponse{
 				Details: fmt.Sprintf("failed to unmarshal file after merge, error: %v", err),
 			})
 		}

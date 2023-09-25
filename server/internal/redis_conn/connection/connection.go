@@ -3,9 +3,10 @@ package redisconn
 import (
 	"context"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/quocbang/data-flow-sync/server/config"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/connection/logging"
-	"github.com/redis/go-redis/v9"
 )
 
 // NewRedis is connect to redis database.
