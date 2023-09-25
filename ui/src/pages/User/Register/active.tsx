@@ -85,9 +85,7 @@ const CheckAndActiveUser: React.FC<ActiveOptions> = (data) => {
           open={open || false}
           onOk={handleOk}
           onCancel={handleCancel}
-          destroyOnClose={handleClose()}            
-          okButtonProps={{ disabled: false }}
-          cancelButtonProps={{ disabled: false }}                               
+          destroyOnClose={handleClose()}                      
           confirmLoading={loading}
         >           
           <ProFormCaptcha

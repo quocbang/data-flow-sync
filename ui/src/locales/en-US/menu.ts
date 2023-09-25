@@ -51,5 +51,6 @@ export default {
   'menu.editor.koni': 'Koni Editor',
   'menu.limitaryHour': 'Limitary Hour',
   'menu.tasks': 'Tasks',
-  'menu.station': "Station"
+  'menu.station': 'Station',
+  'menu.mergeRequest': 'Merge Request',
 };

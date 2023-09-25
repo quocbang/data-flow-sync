@@ -52,9 +52,29 @@ export default [
     component: './TaskList',    
   },
   {
+    path: '/station',
     name: 'station',
     icon: 'smile',
-    path: '/list/station',
     component: './Station',
-  }
+  },
+  {
+    path: '/station/detail',    
+    routes: [
+      {
+        path: '/station/detail/:stationID',
+        name: 'station',    
+        comments: './Welcome'
+      },  
+    ]
+  },
+  {
+    path: '/merge-request',       
+    routes: [
+      {
+        path: '/merge-request/:mergeRequestID/detail',
+        name: 'mergeRequest',
+        component: './MergeRequest/Details',
+      },      
+    ],
+  },
 ];

@@ -1,50 +1,16 @@
 import React, { useState } from "react";
 import { FloatButton, Modal, Table } from "antd";
 import { mergeRequest } from "./type";
-import { setUpColumns } from "./TableSetUp/column";
+import { subColumn } from "./TableSetUp/column";
+import { ColumnsType } from "antd/es/table";
+import { Link } from "@umijs/max";
+const mergeRequestPath = "/merge-request"
 
 const mergeRequests: mergeRequest[] = [
-  {id: 'Merge Request 1', title: 'add new limitary hour file', state: 1, fileAffected: "limitary-hour.yaml", author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 2', title: 'add new station id in station group', state: 2, fileAffected: "KV-P8300-PLY-CUT-1.yaml", author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
-  {id: 'Merge Request 3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
+  {id: 'MergeRequest1', title: 'add new limitary hour file', state: 1, fileAffected: "limitary-hour.yaml", author: 'quocbang',  orderDate: '2023-08-26'},
+  {id: 'MergeRequest2', title: 'add new station id in station group', state: 2, fileAffected: "KV-P8300-PLY-CUT-1.yaml", author: 'quocbang',  orderDate: '2023-08-26'},
+  {id: 'MergeRequest3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},
+  {id: 'MergeRequest3', title: 'delete station', fileAffected: "KV-P8322-PLY-CUT-1.yaml", state: 3, author: 'quocbang',  orderDate: '2023-08-26'},  
 ];
 
 const MergeRequest: React.FC = () => {
@@ -71,6 +37,20 @@ const MergeRequest: React.FC = () => {
       );
   }
 
+  const setUpColumns: ColumnsType<mergeRequest> = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      render: (mergeRequestID) => {                          
+        return (
+          <Link to={`${mergeRequestPath}/${mergeRequestID}/detail`} onClick={() => setOpen(false)}>{mergeRequestID}</Link>
+        )
+      }
+    },
+    ...subColumn
+  ]
+
   return (
     <Modal
       title="Merge Request Notify"
@@ -80,9 +60,13 @@ const MergeRequest: React.FC = () => {
       okButtonProps={{ hidden: true }}
       onCancel={() => setOpen(false)}
       width={1500}
-    >     
+    >
       {selectMergeRequestRows.length > 0 && (
-        <Table columns={setUpColumns} dataSource={selectMergeRequestRows}></Table>
+        <Table 
+          columns={setUpColumns}
+          dataSource={selectMergeRequestRows}        
+        >
+        </Table>
       )}
     </Modal>
   );

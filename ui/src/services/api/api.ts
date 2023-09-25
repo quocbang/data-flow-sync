@@ -72,17 +72,17 @@ export async function removeRule(options?: { [key: string]: any }) {
 }
 
 /** Register Account POST /api/user/signup */
-export async function registerAccount(body:  API.RegisterParams,options?: { [key: string]: any }) {
-    return request<Record<string, any>>('/api/user/signup',{
-      method: 'POST',
-      data: body,
-      ...(options || {}),
-    });
+export async function registerAccount(body: API.RegisterParams, options?: { [key: string]: any }) {
+  return request<Record<string, any>>('/api/user/sign-up', {
+    method: 'POST',
+    data: body,
+    ...(options || {}),
+  });
 }
 
 /** Verify Account POST /api/user/verify-account */
 export async function verifyAccount(body: API.VerifyAccountParams, options?: { [key: string]: any }) {
-  return request<Record<string, any>>('/api/user/verify-account',{
+  return request<Record<string, any>>('/api/user/verify-account', {
     method: 'POST',
     data: body,
     ...(options || {}),
@@ -90,9 +90,24 @@ export async function verifyAccount(body: API.VerifyAccountParams, options?: { [
 }
 
 /** Get Code POST /api/user/send-mail */
-export async function GetCode(options?: { [key: string]: any  }) {
-  return request<Record<string, any>>('/api/user/send-mail',{
-    method: 'POST',   
+export async function GetCode(options?: { [key: string]: any }) {
+  return request<Record<string, any>>('/api/user/send-mail', {
+    method: 'POST',
     ...(options || {}),
   });
+}
+
+export async function CreateStationMergeRequest(body: API.CreateStationMergeRequest, options?: { [key: string]: any }) {
+  return request<API.CreateStationMergeRequestReply>('/api/station/merge-request', {
+    method: 'POST',
+    data: body,
+    ...(options || {}),
+  });
+}
+
+export async function GetStationMergeRequest(params: number, options?: { [key: string]: any }) {
+  return request<any>(`/api/station/merge-request/${params}`, {
+    method: 'GET',
+    ...(options || {}),
+  })
 }

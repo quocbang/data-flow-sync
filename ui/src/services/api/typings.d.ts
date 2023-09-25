@@ -119,4 +119,12 @@ declare namespace API {
   type VerifyAccountParams = {
     otp?: string;
   }
+
+  type CreateStationMergeRequest = {
+    files: string[];
+  }
+
+  type CreateStationMergeRequestReply = {
+    mergeRequestID?: number 
+  }
 }

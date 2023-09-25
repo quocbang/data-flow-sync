@@ -101,7 +101,7 @@ export const errorConfig: RequestConfig = {
         if (error.response.data) {
           // local error          
           const localError: ResponseBackendStructure | undefined = error.response.data;
-          if (localError?.code && localError.details) {            
+          if (localError?.code || localError?.details) {            
             notification.error({
               message: localError.code,
               description: localError.details,              

@@ -33,23 +33,7 @@ const setTag = (s: state) => {
   )
 }
 
-export const setUpColumns: ColumnsType<mergeRequest> = [  
-  {
-    title: 'ID',
-    dataIndex: 'id',
-    key: 'id',
-    render: (dom, entity) => {
-      return (
-        <a
-          onClick={() => {
-
-          }}
-        >     
-        {dom}     
-        </a>
-      );
-    }
-  },
+export const subColumn: ColumnsType<mergeRequest> = [    
   {
     title: 'Title',
     dataIndex: 'title',
