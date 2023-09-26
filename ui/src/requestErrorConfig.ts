@@ -141,8 +141,15 @@ export const errorConfig: RequestConfig = {
       // Intercept request configuration for personalized processing.
       const url = config?.url;
       const graphql = url?.match("/rest/")
-      if (graphql) {
-        config.baseURL = "http://localhost:9999"
+      if (process.env.NODE_ENV === 'production') {          
+        // config.baseURL = process.env.REACT_APP_BASE_URL
+        // TODO: should get in env
+        config.baseURL = 'http://localhost:8888'
+      }
+      if (graphql) {        
+        // config.baseURL = process.env.REACT_APP_GRAPHQL_URL
+        // TODO: should get in env
+        config.baseURL = 'http://localhost:9999'
       }
       config.headers = {
         'Content-Type': 'application/json',
