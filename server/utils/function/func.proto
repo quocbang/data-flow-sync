@@ -10,6 +10,8 @@ enum FuncName {
     UPLOAD_LIMITARY_HOUR = 1;
     
     // station
+    CREATE_STATION_MERGE_REQUEST = 2;
+    GET_STATION_MERGE_REQUEST = 3;
 
     // station group
 

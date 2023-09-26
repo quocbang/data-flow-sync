@@ -20,17 +20,33 @@ type MergeRequestInfo struct {
 	Status         MergeRequestStatus `json:"status"`
 }
 
+type FileCompares struct {
+	FileBeforeMerge []byte `json:"file_before_merge"`
+	FileAfterMerge  []byte `json:"file_after_merge"`
+}
+
+type Changed struct {
+	Added   []byte `json:"added"`
+	Deleted []byte `json:"deleted"`
+}
+
+type FileMergeRequest struct {
+	FileID      string       `json:"file_id"`
+	FileCompare FileCompares `json:"file_compare"`
+	FileChanged Changed      `json:"file_changed"`
+}
+
+type Files []FileMergeRequest
+
 type MergeRequest struct {
-	ID              uint64           `gorm:"primaryKey;autoIncrement:true"`
-	FileID          string           `gorm:"type:text;not null"`
-	Type            types.Types      `gorm:"type:integer;default:0;not null;index:idx_file_types"`
-	FileBeforeMerge []byte           `gorm:"type:bytea"`
-	FileAfterMerge  []byte           `gorm:"type:bytea"`
-	Information     MergeRequestInfo `gorm:"type:jsonb;default:'{}'"`
-	CreatedAt       int64            `gorm:"autoCreateTime:nano;not null"`
-	UpdatedAt       int64            `gorm:"autoUpdateTime:nano"`
-	CreatedBy       string           `gorm:"type:text; not null"`
-	UpdatedBy       string           `gorm:"type:text; not null"`
+	ID          uint64           `gorm:"primaryKey;autoIncrement:true"`
+	Type        types.Types      `gorm:"type:integer;default:0;not null;index:idx_file_types"`
+	File        Files            `gorm:"type:jsonb;default:'{}'"`
+	Information MergeRequestInfo `gorm:"type:jsonb;default:'{}'"`
+	CreatedAt   int64            `gorm:"autoCreateTime:nano;not null"`
+	UpdatedAt   int64            `gorm:"autoUpdateTime:nano"`
+	CreatedBy   string           `gorm:"type:text; not null"`
+	UpdatedBy   string           `gorm:"type:text;"`
 }
 
 func (MergeRequest) TableName() string {
@@ -43,4 +59,12 @@ func (m *MergeRequestInfo) Scan(src any) error {
 
 func (m MergeRequest) Value() (driver.Value, error) {
 	return json.Marshal(m)
+}
+
+func (f *Files) Scan(src any) error {
+	return ScanJSON(src, f)
+}
+
+func (f Files) Value() (driver.Value, error) {
+	return json.Marshal(f)
 }

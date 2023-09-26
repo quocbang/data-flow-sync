@@ -4,6 +4,7 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/quocbang/data-flow-sync/server/swagger/models"
 	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/account"
+	"github.com/quocbang/data-flow-sync/server/swagger/restapi/operations/station"
 )
 
 type Services struct {
@@ -12,13 +13,16 @@ type Services struct {
 	StationGroup StationGroupServices
 }
 
-func RegisterService(account AccountServices) *Services {
+func RegisterService(account AccountServices, station StationServices) *Services {
 	return &Services{
 		Account: account,
+		Station: station,
 	}
 }
 
 type StationServices interface {
+	CreateStationMergeRequest(params station.CreateStationMergeRequestParams, principal *models.Principal) middleware.Responder
+	GetStationMergeRequest(params station.GetStationMergeRequestParams, principal *models.Principal) middleware.Responder
 }
 
 type StationGroupServices interface {

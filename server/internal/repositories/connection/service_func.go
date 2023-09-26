@@ -8,6 +8,8 @@ import (
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/account"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/file"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/mr"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/station"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/services/stationgroup"
 )
@@ -61,4 +63,12 @@ func (d *DB) RollBack() error {
 		return fmt.Errorf("not in transaction")
 	}
 	return d.Postgres.Rollback().Error
+}
+
+func (s *DB) File() repositories.FileServices {
+	return file.NewService(s.Postgres)
+}
+
+func (s *DB) MergeRequest() repositories.MergeRequestServices {
+	return mr.NewService(s.Postgres)
 }

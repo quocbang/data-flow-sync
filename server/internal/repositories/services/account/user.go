@@ -9,6 +9,7 @@ import (
 
 	"github.com/quocbang/data-flow-sync/server/internal/repositories"
 	e "github.com/quocbang/data-flow-sync/server/internal/repositories/errors"
+	"github.com/quocbang/data-flow-sync/server/internal/repositories/errors/repositorieserror"
 	"github.com/quocbang/data-flow-sync/server/internal/repositories/orm/models"
 	"github.com/quocbang/data-flow-sync/server/utils/roles"
 )
@@ -36,7 +37,7 @@ func (s service) GetAccount(ctx context.Context, Identifier string) (models.Acco
 					Details: "account not found",
 				}
 			}
-			return models.Account{}, err
+			return models.Account{}, repositorieserror.MapError(err)
 		}
 	}
 	return user, nil
@@ -59,19 +60,19 @@ func (s service) createAccount(ctx context.Context, req repositories.CreateAccou
 		Roles:    roles.Roles_UNSPECIFIED,
 	})
 
-	return repositories.CreateAccountReply{RowsAffected: reply.RowsAffected}, reply.Error
+	return repositories.CreateAccountReply{RowsAffected: reply.RowsAffected}, repositorieserror.MapError(reply.Error)
 }
 
 // DeleteAccount is delete existing account
 func (s service) DeleteAccount(ctx context.Context, req repositories.DeleteAccountRequest) (repositories.CommonUpdateAndDeleteReply, error) {
 	reply := s.pg.Where(`user_id=?`, req.UserID).Delete(&models.Account{})
-	return repositories.CommonUpdateAndDeleteReply{RowsAffected: reply.RowsAffected}, reply.Error
+	return repositories.CommonUpdateAndDeleteReply{RowsAffected: reply.RowsAffected}, repositorieserror.MapError(reply.Error)
 }
 
 // UpdateRole updates the role for specified account
 func (s service) UpdateToUserRole(ctx context.Context, email string) (repositories.CommonUpdateAndDeleteReply, error) {
 	reply := s.pg.Model(&models.Account{}).Where(`email = ?`, email).Update("roles", roles.Roles_USER)
-	return repositories.CommonUpdateAndDeleteReply{RowsAffected: reply.RowsAffected}, reply.Error
+	return repositories.CommonUpdateAndDeleteReply{RowsAffected: reply.RowsAffected}, repositorieserror.MapError(reply.Error)
 }
 
 func (s service) SignUp(ctx context.Context, req repositories.SignUpAccountRequest) error {
@@ -81,7 +82,7 @@ func (s service) SignUp(ctx context.Context, req repositories.SignUpAccountReque
 		Password: req.Password,
 	})
 	if err != nil {
-		return err
+		return repositorieserror.MapError(err)
 	}
 	return nil
 }
