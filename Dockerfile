@@ -23,9 +23,9 @@ WORKDIR ${SERVER_DIR}
 RUN go generate .
 RUN go mod download
 RUN go vet ./...
-# RUN go test -race -gcflags -l -coverprofile .testCoverage.txt ./...
-# RUN go tool cover -func .testCoverage.txt
-RUN go build -race -ldflags "-extldflags '-static'" -o /opt/data-flow-sync ./swagger/cmd/${APP_NAME}-server
+RUN go test -race -gcflags -l -coverprofile .testCoverage.txt ./...
+RUN go tool cover -func .testCoverage.txt
+RUN go build -race -ldflags "-extldflags '-static'" -o /opt/data-flow-sync/server ./swagger/cmd/${APP_NAME}-server
 
 CMD ["/bin/sh"]
 
