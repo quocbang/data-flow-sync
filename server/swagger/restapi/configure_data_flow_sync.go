@@ -95,6 +95,9 @@ func configureAPI(api *operations.DataFlowSyncAPI) http.Handler {
 
 	// connect to Redis
 	rd, err := server.RegisterRedis(configurations.Redis)
+	if err != nil {
+		log.Fatalf("failed to register redis, error: %v", err)
+	}
 
 	serviceConfig := apiService.ServiceConfig{
 		Repo:          repo,
