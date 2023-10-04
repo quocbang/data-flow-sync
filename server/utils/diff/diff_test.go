@@ -60,6 +60,7 @@ func TestFindDiff(t *testing.T) {
 				"",
 			},
 		})
+		assertion.NoError(err)
 		expectedDeleted, err := json.Marshal(Test{
 			Age: 20,
 			Habit: []string{
@@ -68,6 +69,7 @@ func TestFindDiff(t *testing.T) {
 				"",
 			},
 		})
+		assertion.NoError(err)
 		assertion.Equal(expectedAdded, added)
 		assertion.Equal(expectedDeleted, deleted)
 	}
