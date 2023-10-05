@@ -1,8 +1,8 @@
 ARG golang_version=1.20.8
 ARG alpine_version=3.18
-ARG go_swagger_version=0.27.0
 
 FROM golang:${golang_version}-alpine${alpine_version} as server_builder
+ARG go_swagger_version=0.30.5
 
 RUN apk add --no-cache git
 RUN apk add --update --no-cache curl build-base
@@ -20,11 +20,9 @@ ENV SMTP_PORT_TEST=${SMTP_PORT_TEST}
 ENV SMTP_SENDER_TEST=${SMTP_SENDER_TEST}
 ENV SMTP_PASSWORD_TEST=${SMTP_PASSWORD_TEST}
 
-ENV REPO_DIR ${GOPATH}/src/github.com/quocbang/data-flow-sync
-ENV SERVER_DIR ${REPO_DIR}/server
+ENV SERVER_DIR ${GOPATH}/src/github.com/quocbang/data-flow-sync/server
 ENV APP_NAME data-flow-sync
 
-COPY ../swagger.yml ${REPO_DIR}/
 COPY . ${SERVER_DIR}/
 
 WORKDIR ${SERVER_DIR}
