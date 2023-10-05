@@ -1,6 +1,7 @@
 name: ci
 
 on:  
+  branch_protection_rule: 
   pull_request:
   release:
     types: [published]
