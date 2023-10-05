@@ -38,7 +38,7 @@ jobs:
               echo "Start production build..."
               cd server/
               docker build -t bangquoc9/data-flow-sync-be:${{ env.RELEASES_TAG }} --build-arg SMTP_SERVER_TEST=${{ secrets.SMTP_SERVER }} --build-arg SMTP_PORT_TEST=${{ secrets.SMTP_PORT }} --build-arg SMTP_SENDER_TEST=${{ secrets.SMTP_SENDER }} --build-arg SMTP_PASSWORD_TEST=${{ secrets.SMTP_PASSWORD }} .
-              docker push bangquoc9/data-flow-sync:${{ env.RELEASES_TAG }}
+              docker push bangquoc9/data-flow-sync-be:${{ env.RELEASES_TAG }}
               echo "Build back end production completed" 
     - name: build front end production
       if: env.RELEASES_TAG != null
@@ -46,5 +46,5 @@ jobs:
               echo "Start production build..."
               cd ui/
               docker build -t bangquoc9/data-flow-sync-fe:${{ env.RELEASES_TAG }} .
-              docker push bangquoc9/data-flow-sync:${{ env.RELEASES_TAG }}
+              docker push bangquoc9/data-flow-sync-be:${{ env.RELEASES_TAG }}
               echo "Build front end production completed" 
