@@ -1,10 +1,8 @@
 name: ci
 
 on:
-  push:
-    branches: [ "master" ]
+  push:    
   pull_request:
-    branches: [ "master" ]
   release:
     types: [published]
 
@@ -47,7 +45,7 @@ jobs:
       if: env.RELEASES_TAG != null
       run: |
               echo "Start production build..."
-              cd ui
+              cd ui/
               docker build -t bangquoc9/data-flow-sync-fe:${{ env.RELEASES_TAG }} .
               docker push bangquoc9/data-flow-sync:${{ env.RELEASES_TAG }}
               echo "Build front end production completed" 
