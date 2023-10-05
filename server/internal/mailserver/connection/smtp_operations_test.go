@@ -70,7 +70,7 @@ func Test_SendAccountVerification(t *testing.T) {
 
 	// Act
 	otp, err := mail_s.SendAccountVerification(ctx, mailserver.MailVerifyRequest{
-		Recipient: "mori@kenda.com.tw",
+		Recipient: "test@gmail.com.tw",
 	})
 
 	// Assert

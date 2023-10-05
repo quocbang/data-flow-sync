@@ -12,3 +12,10 @@ RUN npm install
 RUN npm run build
 
 CMD ["/bin/sh"]
+
+# copy dist folder to new server
+FROM node:${node_version}-alpine${alpine_version}
+
+WORKDIR /root/
+
+COPY --from=ui_builder /app/dist /root/ui

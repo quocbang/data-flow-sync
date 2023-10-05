@@ -35,3 +35,10 @@ RUN go tool cover -func .testCoverage.txt
 RUN go build -race -ldflags "-extldflags '-static'" -o /opt/data-flow-sync/server ./swagger/cmd/${APP_NAME}-server
 
 CMD ["/bin/sh"]
+
+# copy exec file to new server 
+FROM golang:${golang_version}-alpine${alpine_version}
+
+WORKDIR /root/
+
+COPY --from=server_builder /opt/data-flow-sync/server /root/server
