@@ -24,7 +24,7 @@ ENV REPO_DIR ${GOPATH}/src/github.com/quocbang/data-flow-sync
 ENV SERVER_DIR ${REPO_DIR}/server
 ENV APP_NAME data-flow-sync
 
-COPY ./swagger.yml ${REPO_DIR}/
+COPY ../swagger.yml ${REPO_DIR}/
 COPY . ${SERVER_DIR}/
 
 WORKDIR ${SERVER_DIR}
