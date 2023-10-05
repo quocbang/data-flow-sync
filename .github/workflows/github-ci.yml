@@ -46,5 +46,5 @@ jobs:
               echo "Start production build..."
               cd ui/
               docker build -t bangquoc9/data-flow-sync-fe:${{ env.RELEASES_TAG }} .
-              docker push bangquoc9/data-flow-sync-be:${{ env.RELEASES_TAG }}
+              docker push bangquoc9/data-flow-sync-fe:${{ env.RELEASES_TAG }}
               echo "Build front end production completed" 
