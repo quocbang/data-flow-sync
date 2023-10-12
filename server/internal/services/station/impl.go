@@ -95,7 +95,7 @@ func (s Station) CreateStationMergeRequest(params station.CreateStationMergeRequ
 		})
 		if err != nil {
 			if errors.Is(err, repoErr.ErrDataNotFound) {
-				oldFile.File.FileContent = []byte{}
+				oldFile.File.FileContent = []byte(`{}`)
 			} else {
 				return utils.ParseError(ctx, station.NewCreateStationMergeRequestDefault(0), err)
 			}
